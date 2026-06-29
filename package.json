@@ -3,16 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/predev.mjs 6005",
     "dev": "next dev -p 6005",
     "build": "next build",
     "start": "next start -p 6005",
+    "clean": "node scripts/predev.mjs",
     "lint": "eslint"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",
     "next": "16.2.9",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "react-youtube": "^10.1.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

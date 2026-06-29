@@ -52,6 +52,15 @@ export function Sidebar({
         </ul>
       </nav>
       <div className="border-t-2 border-black p-3">
+        <a
+          href={process.env.NEXT_PUBLIC_APP_URL || "http://localhost:7778"}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-2 flex items-center justify-center gap-1.5 border-2 border-black py-2 text-sm font-bold text-black transition-colors hover:bg-accent"
+        >
+          アプリケーションへ
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+        </a>
         <p className="truncate px-2 text-xs font-medium text-zinc-500">
           {email}
         </p>

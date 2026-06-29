@@ -10,6 +10,7 @@ import {
   Button,
   Field,
   TextInput,
+  TextArea,
   Card,
 } from "@/components/ui";
 
@@ -32,6 +33,8 @@ export default function SongsPage() {
     const { error } = await save({
       id: draft.id,
       title: draft.title,
+      title_ja: draft.title_ja || null,
+      description: draft.description || null,
       artist: draft.artist ?? "",
       youtube_id: videoId,
       level: Number(draft.level ?? 1),
@@ -58,10 +61,20 @@ export default function SongsPage() {
         <div className="mb-6">
           <Card>
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="タイトル">
+              <Field label="原題（原語タイトル）">
                 <TextInput
                   value={draft.title ?? ""}
                   onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+                  placeholder="강남스타일"
+                />
+              </Field>
+              <Field label="日本語タイトル">
+                <TextInput
+                  value={draft.title_ja ?? ""}
+                  onChange={(e) =>
+                    setDraft({ ...draft, title_ja: e.target.value })
+                  }
+                  placeholder="江南スタイル"
                 />
               </Field>
               <Field label="アーティスト">
@@ -90,6 +103,18 @@ export default function SongsPage() {
                   onChange={(e) =>
                     setDraft({ ...draft, level: Number(e.target.value) })
                   }
+                />
+              </Field>
+            </div>
+            <div className="mt-4">
+              <Field label="曲の説明（任意）">
+                <TextArea
+                  rows={2}
+                  value={draft.description ?? ""}
+                  onChange={(e) =>
+                    setDraft({ ...draft, description: e.target.value })
+                  }
+                  placeholder="曲やアーティストの紹介、学習ポイントなど"
                 />
               </Field>
             </div>
@@ -133,9 +158,14 @@ export default function SongsPage() {
                   className="h-16 w-28 shrink-0 rounded-xl object-cover"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-bold text-slate-700">{s.title}</p>
-                  <p className="truncate text-sm text-slate-400">{s.artist}</p>
-                  <p className="text-xs text-slate-400">Lv.{s.level}</p>
+                  <p className="truncate font-bold text-black">{s.title}</p>
+                  {s.title_ja && (
+                    <p className="truncate text-sm font-medium text-zinc-600">
+                      {s.title_ja}
+                    </p>
+                  )}
+                  <p className="truncate text-sm text-zinc-400">{s.artist}</p>
+                  <p className="text-xs text-zinc-400">Lv.{s.level}</p>
                 </div>
               </div>
               <div className="mt-3 flex gap-2">
