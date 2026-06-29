@@ -6,7 +6,6 @@ import { useTable } from "@/lib/db";
 import { extractYoutubeId } from "@/lib/youtube";
 import type { Song } from "@/lib/types";
 import {
-  PageHeader,
   Button,
   Field,
   TextInput,
@@ -47,19 +46,31 @@ export default function SongsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="楽曲"
-        subtitle="YouTube動画を登録し、詳細で歌詞行とクイズを設定します"
-        action={
-          <Button onClick={() => setDraft({ level: 1 })}>＋ 新規追加</Button>
-        }
-      />
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <h1 className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-2xl font-bold tracking-tight text-black">
+          楽曲
+          <span className="text-sm font-medium text-zinc-500">
+            YouTube動画を登録し、詳細で歌詞行とクイズを設定します
+          </span>
+        </h1>
+        <Button onClick={() => setDraft({ level: 1 })}>＋ 新規追加</Button>
+      </div>
 
       {error && <p className="mb-4 text-sm text-rose-500">{error}</p>}
 
       {draft && (
-        <div className="mb-6">
-          <Card>
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4"
+          onClick={() => setDraft(null)}
+        >
+          <div
+            className="my-8 w-full max-w-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Card>
+              <h2 className="mb-4 text-lg font-bold tracking-tight text-black">
+                {draft.id ? "楽曲を編集" : "楽曲を新規追加"}
+              </h2>
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="原題（原語タイトル）">
                 <TextInput
@@ -138,7 +149,8 @@ export default function SongsPage() {
                 キャンセル
               </Button>
             </div>
-          </Card>
+            </Card>
+          </div>
         </div>
       )}
 
@@ -158,14 +170,18 @@ export default function SongsPage() {
                   className="h-16 w-28 shrink-0 rounded-xl object-cover"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-bold text-black">{s.title}</p>
-                  {s.title_ja && (
-                    <p className="truncate text-sm font-medium text-zinc-600">
-                      {s.title_ja}
-                    </p>
-                  )}
-                  <p className="truncate text-sm text-zinc-400">{s.artist}</p>
-                  <p className="text-xs text-zinc-400">Lv.{s.level}</p>
+                  <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-bold text-black">
+                    <span className="inline-block shrink-0 border-2 border-black bg-accent px-2 py-0.5 text-xs font-bold text-black">
+                      Lv.{s.level}
+                    </span>
+                    <span className="min-w-0 truncate">
+                      {s.title}
+                      {s.title_ja ? `　${s.title_ja}` : ""}
+                    </span>
+                  </p>
+                  <p className="mt-1 truncate text-sm text-zinc-400">
+                    {s.artist}
+                  </p>
                 </div>
               </div>
               <div className="mt-3 flex gap-2">

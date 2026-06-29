@@ -83,28 +83,29 @@ export function buildQuizzes(a: QuizAuthoring): BuildResult {
   // 種別に応じて「空欄を作る言語(primary)」と「対訳表示(secondary)」を決める。
   //  - 意味を選ぶ(meaning): 日本語に空欄（無ければ韓国語にフォールバック）
   //  - 韓国語を選ぶ(blank):  韓国語に空欄（無ければ日本語にフォールバック）
+  // primaryIsKo: 空欄を作る言語が韓国語かどうかを「文字列比較」ではなく
+  // 選択時のフラグで保持する（韓国語/日本語が同一文字列でも誤判定しない）
   let primary: string;
-  let secondary: string;
+  let primaryIsKo: boolean;
   if (a.type === "meaning") {
-    if (jaNums.length) {
-      primary = a.questionTextJa;
-      secondary = a.questionText;
-    } else {
-      primary = a.questionText;
-      secondary = a.questionTextJa;
-    }
+    // 意味を選ぶ: 日本語に空欄（無ければ韓国語にフォールバック）
+    primaryIsKo = jaNums.length === 0;
   } else {
-    if (krNums.length) {
-      primary = a.questionText;
-      secondary = a.questionTextJa;
-    } else {
-      primary = a.questionTextJa;
-      secondary = a.questionText;
-    }
+    // 韓国語を選ぶ: 韓国語に空欄（無ければ日本語にフォールバック）
+    primaryIsKo = krNums.length > 0;
   }
+  primary = primaryIsKo ? a.questionText : a.questionTextJa;
 
   const nums = blankNumbers(primary);
-  if (nums.length === 0) return { quizzes: [] };
+  if (nums.length === 0) {
+    return {
+      quizzes: [],
+      error:
+        a.type === "meaning"
+          ? "日本語（または韓国語）の問題文に空欄 #1<> を1つ以上指定してください"
+          : "韓国語（または日本語）の問題文に空欄 #1<> を1つ以上指定してください",
+    };
+  }
 
   const pool = a.options.map((o) => o.text.trim()).filter(Boolean);
   const answerOf = (n: number) =>
@@ -116,8 +117,8 @@ export function buildQuizzes(a: QuizAuthoring): BuildResult {
     }
   }
 
-  // 韓国語が空欄側か（= primary が韓国語）
-  const koIsPrimary = primary === a.questionText;
+  // 韓国語が空欄側か
+  const koIsPrimary = primaryIsKo;
 
   // 指定言語の行を作る（isPrimary の時だけ空欄n を ___、他は語で埋める）
   const lineFor = (text: string, n: number, isPrimary: boolean) =>

@@ -58,9 +58,14 @@ export function useTable<T extends { id: string }>(
   const remove = useCallback(
     async (id: string) => {
       const sb = getSupabase();
-      if (!sb) return;
-      await sb.from(table).delete().eq("id", id);
+      if (!sb) return { error: "Supabase未設定" };
+      const { error } = await sb.from(table).delete().eq("id", id);
+      if (error) {
+        setError(error.message);
+        return { error: error.message };
+      }
       await refresh();
+      return {};
     },
     [table, refresh],
   );

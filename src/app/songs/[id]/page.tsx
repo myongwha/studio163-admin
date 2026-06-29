@@ -50,6 +50,7 @@ export default function SongLinesPage() {
   const [song, setSong] = useState<Song | null>(null);
   const [lines, setLines] = useState<SongLine[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [draft, setDraft] = useState<LineDraft | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
@@ -112,19 +113,27 @@ export default function SongLinesPage() {
 
   const load = useCallback(async () => {
     const sb = getSupabase();
-    if (!sb) return;
+    if (!sb) {
+      setLoadError("Supabase未設定です");
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    const { data: songData } = await sb
+    setLoadError("");
+    const { data: songData, error: songErr } = await sb
       .from("songs")
       .select("*")
       .eq("id", params.id)
       .single();
-    const { data: lineData } = await sb
+    const { data: lineData, error: lineErr } = await sb
       .from("song_lines")
       .select("*")
       .eq("song_id", params.id)
       .order("start_sec", { ascending: true })
       .order("created_at", { ascending: true });
+    if (songErr || lineErr) {
+      setLoadError((songErr ?? lineErr)?.message ?? "読み込みに失敗しました");
+    }
     setSong((songData as Song) ?? null);
     setLines((lineData as SongLine[]) ?? []);
     setLoading(false);
@@ -452,11 +461,15 @@ export default function SongLinesPage() {
     }
   }
 
-  if (loading) return <p className="text-slate-400">読み込み中…</p>;
+  if (loading) return <p className="text-zinc-400">読み込み中…</p>;
   if (!song)
     return (
       <div>
-        <p className="text-sm text-zinc-400">曲が見つかりません。</p>
+        <p className="text-sm text-zinc-400">
+          {loadError
+            ? `読み込みエラー: ${loadError}`
+            : "曲が見つかりません。"}
+        </p>
         <Link href="/songs" className="text-sm font-medium text-zinc-900">
           ← 楽曲一覧
         </Link>
@@ -471,15 +484,22 @@ export default function SongLinesPage() {
       >
         ← 楽曲一覧
       </Link>
+      {loadError && (
+        <p className="mt-2 border-2 border-black bg-zinc-50 px-3 py-2 text-sm font-medium text-rose-600">
+          読み込みエラー: {loadError}
+        </p>
+      )}
       <div className="mb-6 mt-2 flex items-start justify-between gap-4">
         <div>
-          <span className="inline-block border-2 border-black bg-accent px-2 py-0.5 text-xs font-bold text-black">
-            Lv.{song.level}
-          </span>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-black">
-            {song.title}
-            {song.title_ja ? `　${song.title_ja}` : ""}
-            <span className="ml-3 text-base font-medium text-zinc-500">
+          <h1 className="flex flex-wrap items-center gap-x-3 gap-y-2 text-2xl font-bold tracking-tight text-black">
+            <span className="inline-block border-2 border-black bg-accent px-2 py-0.5 text-xs font-bold text-black">
+              Lv.{song.level}
+            </span>
+            <span>
+              {song.title}
+              {song.title_ja ? `　${song.title_ja}` : ""}
+            </span>
+            <span className="text-base font-medium text-zinc-500">
               {song.artist}
             </span>
           </h1>
