@@ -16,7 +16,7 @@ import {
 type Draft = Partial<Song>;
 
 export default function SongsPage() {
-  const { rows, loading, error, save, remove } = useTable<Song>("songs");
+  const { rows, loading, error, save } = useTable<Song>("songs");
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
@@ -184,21 +184,10 @@ export default function SongsPage() {
                   </p>
                 </div>
               </div>
-              <div className="mt-3 flex gap-2">
-                <Link href={`/songs/${s.id}`} className="flex-1">
+              <div className="mt-3">
+                <Link href={`/songs/${s.id}`} className="block">
                   <Button className="w-full">歌詞・クイズを編集</Button>
                 </Link>
-                <Button variant="ghost" onClick={() => setDraft(s)}>
-                  編集
-                </Button>
-                <Button
-                  variant="danger"
-                  onClick={() => {
-                    if (confirm(`「${s.title}」を削除しますか？`)) remove(s.id);
-                  }}
-                >
-                  削除
-                </Button>
               </div>
             </Card>
           ))}

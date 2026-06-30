@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import YouTube, { type YouTubePlayer } from "react-youtube";
 import { extractYoutubeId } from "@/lib/youtube";
@@ -51,10 +51,15 @@ const emptyDraft = (): LineDraft => ({
 
 export default function SongLinesPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const [song, setSong] = useState<Song | null>(null);
   const [lines, setLines] = useState<SongLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  // 曲メタ情報の編集モーダル
+  const [songDraft, setSongDraft] = useState<Partial<Song> | null>(null);
+  const [songSaving, setSongSaving] = useState(false);
+  const [songFormError, setSongFormError] = useState("");
   const [draft, setDraft] = useState<LineDraft | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
@@ -144,6 +149,53 @@ export default function SongLinesPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // 曲メタ情報を保存
+  async function saveSong() {
+    if (!songDraft) return;
+    const videoId = extractYoutubeId(songDraft.youtube_id ?? "");
+    if (!songDraft.title || !videoId) {
+      setSongFormError("タイトルと YouTube URL（またはID）は必須です");
+      return;
+    }
+    const sb = getSupabase();
+    if (!sb) return;
+    setSongSaving(true);
+    setSongFormError("");
+    const { error } = await sb
+      .from("songs")
+      .update({
+        title: songDraft.title,
+        title_ja: songDraft.title_ja || null,
+        description: songDraft.description || null,
+        artist: songDraft.artist ?? "",
+        youtube_id: videoId,
+        level: Number(songDraft.level ?? 1),
+      })
+      .eq("id", params.id);
+    setSongSaving(false);
+    if (error) setSongFormError(error.message);
+    else {
+      setSongDraft(null);
+      load();
+    }
+  }
+
+  // 曲ごと削除（歌詞行も削除して一覧へ戻る）
+  async function deleteSong() {
+    if (!song) return;
+    if (!confirm(`「${song.title}」を曲ごと削除しますか？この操作は戻せません。`))
+      return;
+    const sb = getSupabase();
+    if (!sb) return;
+    await sb.from("song_lines").delete().eq("song_id", params.id);
+    const { error } = await sb.from("songs").delete().eq("id", params.id);
+    if (error) {
+      setLoadError(error.message);
+      return;
+    }
+    router.push("/songs");
+  }
 
   function startEdit(line: SongLine) {
     setDraft({
@@ -455,7 +507,9 @@ export default function SongLinesPage() {
           読み込みエラー: {loadError}
         </p>
       )}
-      <div className="mb-6 mt-2 flex items-start justify-between gap-4">
+      {/* タイトル・操作ボタン・プレイヤーをまとめて上部固定 */}
+      <div className="sticky top-0 z-20 mb-5 bg-zinc-50 pb-3 pt-1">
+      <div className="mb-3 flex items-start justify-between gap-4">
         <div>
           <h1 className="flex flex-wrap items-center gap-x-3 gap-y-2 text-2xl font-bold tracking-tight text-black">
             <span className="inline-block border-2 border-black bg-accent px-2 py-0.5 text-xs font-bold text-black">
@@ -471,6 +525,9 @@ export default function SongLinesPage() {
           </h1>
         </div>
         <div className="flex shrink-0 flex-wrap justify-end gap-2">
+          <Button variant="ghost" onClick={() => setSongDraft(song)}>
+            曲情報を編集
+          </Button>
           <Button onClick={() => setDraft(emptyDraft())}>＋ 歌詞行を追加</Button>
           <Button variant="ghost" onClick={() => setPasteOpen(true)}>
             歌詞を貼り付け
@@ -483,14 +540,8 @@ export default function SongLinesPage() {
         </div>
       </div>
 
-      {/* 編集用 YouTube プレイヤー（再生しながら秒数・クイズを設定）。上部固定 */}
-      <div className="sticky top-0 z-10 mb-5 border-2 border-black bg-white p-3">
-        <Link
-          href="/songs"
-          className="mb-2 inline-block text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-900"
-        >
-          ← 楽曲一覧
-        </Link>
+      {/* 編集用 YouTube プレイヤー（再生しながら秒数・クイズを設定） */}
+      <div className="border-2 border-black bg-white p-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="w-full shrink-0 border-2 border-black bg-black sm:w-72">
             <div className="aspect-video">
@@ -522,7 +573,7 @@ export default function SongLinesPage() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Button onClick={togglePlay}>
+            <Button onClick={togglePlay} className="min-w-[7rem] text-center">
               {playing ? "⏸ 一時停止" : "▶ 再生"}
             </Button>
             <div>
@@ -540,6 +591,7 @@ export default function SongLinesPage() {
         <p className="mt-2 text-xs text-zinc-400">
           シークバーは無効です。再生/一時停止ボタンで操作し、各行の時間（クリックで編集）に現在秒を入力できます。
         </p>
+      </div>
       </div>
 
       {pasteOpen && (
@@ -948,10 +1000,19 @@ export default function SongLinesPage() {
                       （{l.korean_text || "間奏"}）
                     </span>
                   ) : (
-                    l.korean_text
+                    <div
+                      className="max-w-[16rem] truncate"
+                      title={l.korean_text}
+                    >
+                      {l.korean_text}
+                    </div>
                   )}
                 </td>
-                <td className="text-zinc-500">{l.meaning_ja}</td>
+                <td className="text-zinc-500">
+                  <div className="max-w-[16rem] truncate" title={l.meaning_ja}>
+                    {l.meaning_ja}
+                  </div>
+                </td>
                 <td>
                   {(() => {
                     const qs =
@@ -1032,6 +1093,105 @@ export default function SongLinesPage() {
             </button>
           </div>
         </>
+      )}
+
+      {/* 画面最下部：曲ごと削除 */}
+      <div className="mt-10 border-t border-zinc-200 pt-6">
+        <Button variant="danger" onClick={deleteSong}>
+          この曲を削除
+        </Button>
+      </div>
+
+      {/* 曲情報の編集モーダル */}
+      {songDraft && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4"
+          onClick={() => setSongDraft(null)}
+        >
+          <div
+            className="my-8 w-full max-w-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Card>
+              <h2 className="mb-4 text-lg font-bold tracking-tight text-black">
+                曲情報を編集
+              </h2>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="原題（原語タイトル）">
+                  <TextInput
+                    value={songDraft.title ?? ""}
+                    onChange={(e) =>
+                      setSongDraft({ ...songDraft, title: e.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="日本語タイトル">
+                  <TextInput
+                    value={songDraft.title_ja ?? ""}
+                    onChange={(e) =>
+                      setSongDraft({ ...songDraft, title_ja: e.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="アーティスト">
+                  <TextInput
+                    value={songDraft.artist ?? ""}
+                    onChange={(e) =>
+                      setSongDraft({ ...songDraft, artist: e.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="YouTube URL（リンクをそのまま貼れます）">
+                  <TextInput
+                    value={songDraft.youtube_id ?? ""}
+                    onChange={(e) =>
+                      setSongDraft({ ...songDraft, youtube_id: e.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="レベル (1〜5)">
+                  <TextInput
+                    type="number"
+                    min={1}
+                    max={5}
+                    value={songDraft.level ?? 1}
+                    onChange={(e) =>
+                      setSongDraft({
+                        ...songDraft,
+                        level: Number(e.target.value) as Song["level"],
+                      })
+                    }
+                  />
+                </Field>
+              </div>
+              <div className="mt-4">
+                <Field label="曲の説明（任意）">
+                  <TextArea
+                    rows={2}
+                    value={songDraft.description ?? ""}
+                    onChange={(e) =>
+                      setSongDraft({
+                        ...songDraft,
+                        description: e.target.value,
+                      })
+                    }
+                  />
+                </Field>
+              </div>
+              {songFormError && (
+                <p className="mt-3 text-sm text-rose-500">{songFormError}</p>
+              )}
+              <div className="mt-4 flex gap-2">
+                <Button onClick={saveSong} disabled={songSaving}>
+                  {songSaving ? "保存中…" : "保存"}
+                </Button>
+                <Button variant="ghost" onClick={() => setSongDraft(null)}>
+                  キャンセル
+                </Button>
+              </div>
+            </Card>
+          </div>
+        </div>
       )}
     </div>
   );
