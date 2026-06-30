@@ -129,7 +129,9 @@ export default function SongLinesPage() {
       .from("song_lines")
       .select("*")
       .eq("song_id", params.id)
+      // 時間昇順 → 同じ時間（貼り付け直後は全て0）は登録順(order_index)で並べる
       .order("start_sec", { ascending: true })
+      .order("order_index", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: true });
     if (songErr || lineErr) {
       setLoadError((songErr ?? lineErr)?.message ?? "読み込みに失敗しました");
@@ -733,6 +735,24 @@ export default function SongLinesPage() {
 
             {!draft.isInterlude && (
               <div className="mt-4">
+                <Field label="解説・ヒント（任意）">
+                  <TextArea
+                    rows={2}
+                    value={draft.explanation}
+                    onChange={(e) =>
+                      setDraft({ ...draft, explanation: e.target.value })
+                    }
+                    placeholder="文法ポイントや補足など"
+                  />
+                </Field>
+                <p className="mt-1 text-xs text-zinc-500">
+                  クイズ有: 回答後に表示／クイズ無: 再生中にこの行で下部に HINT 表示
+                </p>
+              </div>
+            )}
+
+            {!draft.isInterlude && (
+              <div className="mt-4">
                 <label className="flex items-center gap-2 text-sm font-bold text-black">
                   <input
                     type="checkbox"
@@ -872,20 +892,6 @@ export default function SongLinesPage() {
                       <p className="mb-2 text-sm font-bold text-black">
                         ③ 回答
                       </p>
-                      <div className="mb-3">
-                        <Field label="解説（任意・回答後に表示）">
-                          <TextArea
-                            rows={2}
-                            value={draft.explanation}
-                            onChange={(e) =>
-                              setDraft({
-                                ...draft,
-                                explanation: e.target.value,
-                              })
-                            }
-                          />
-                        </Field>
-                      </div>
                       <Field label="自然な翻訳（任意）">
                         <TextInput
                           value={draft.natural_ja}

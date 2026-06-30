@@ -1,7 +1,8 @@
 // dev 起動前の安全処理:
 //  1) 対象ポートを使っているプロセスを停止（EADDRINUSE 回避）
-//  2) 壊れた .next キャッシュを削除（Turbopack パニック回避）
-// クラッシュせず毎回クリーンに起動するためのもの。失敗しても起動は止めない。
+//  2) CLEAN=1 のときだけ .next キャッシュを削除（Turbopack パニック時の手動リセット用）
+// ※ 毎回 .next を消すと毎回フルコンパイルになり初回読み込みが遅くなるため、
+//    通常はキャッシュを残して高速起動する。失敗しても起動は止めない。
 import { execSync } from "node:child_process";
 import { rmSync } from "node:fs";
 
@@ -34,6 +35,8 @@ function freePort(p) {
 }
 
 freePort(port);
-try {
-  rmSync(".next", { recursive: true, force: true });
-} catch {}
+if (process.env.CLEAN === "1") {
+  try {
+    rmSync(".next", { recursive: true, force: true });
+  } catch {}
+}
