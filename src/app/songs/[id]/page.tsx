@@ -36,6 +36,14 @@ interface LineDraft {
 type InterludeKind = "前奏" | "間奏" | "後奏";
 const INTERLUDE_KINDS: InterludeKind[] = ["前奏", "間奏", "後奏"];
 
+// その場編集できる曲メタ情報のフィールド
+type EditableSongField =
+  | "title"
+  | "title_ja"
+  | "artist"
+  | "level"
+  | "description";
+
 const emptyDraft = (): LineDraft => ({
   startText: "",
   endText: "",
@@ -56,10 +64,9 @@ export default function SongLinesPage() {
   const [lines, setLines] = useState<SongLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  // 曲メタ情報の編集モーダル
-  const [songDraft, setSongDraft] = useState<Partial<Song> | null>(null);
-  const [songSaving, setSongSaving] = useState(false);
-  const [songFormError, setSongFormError] = useState("");
+  // 曲メタ情報のその場編集
+  const [editField, setEditField] = useState<EditableSongField | null>(null);
+  const [editValue, setEditValue] = useState("");
   const [draft, setDraft] = useState<LineDraft | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
@@ -80,41 +87,8 @@ export default function SongLinesPage() {
     end: number;
   } | null>(null);
 
-  // 編集用 YouTube プレイヤー
+  // 編集用 YouTube プレイヤー（再生・シークは YouTube 標準UIで操作）
   const playerRef = useRef<YouTubePlayer | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [now, setNow] = useState(0);
-  const [playing, setPlaying] = useState(false);
-
-  function togglePlay() {
-    const p = playerRef.current;
-    if (!p) return;
-    if (playing) p.pauseVideo();
-    else p.playVideo();
-  }
-
-  useEffect(() => {
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, []);
-
-  function startPolling() {
-    if (pollRef.current) clearInterval(pollRef.current);
-    pollRef.current = setInterval(async () => {
-      const p = playerRef.current;
-      if (!p) return;
-      const t: number = await p.getCurrentTime();
-      setNow(t);
-    }, 200);
-  }
-
-  // 現在の再生秒（小数2桁）
-  const nowText = now.toFixed(2);
-
-  function copyNow() {
-    navigator.clipboard?.writeText(nowText).catch(() => {});
-  }
 
   const load = useCallback(async () => {
     const sb = getSupabase();
@@ -150,35 +124,42 @@ export default function SongLinesPage() {
     load();
   }, [load]);
 
-  // 曲メタ情報を保存
-  async function saveSong() {
-    if (!songDraft) return;
-    const videoId = extractYoutubeId(songDraft.youtube_id ?? "");
-    if (!songDraft.title || !videoId) {
-      setSongFormError("タイトルと YouTube URL（またはID）は必須です");
+  // 曲メタ情報をその場で編集開始／確定
+  function startFieldEdit(field: EditableSongField, current: string) {
+    setEditField(field);
+    setEditValue(current);
+  }
+  async function commitField() {
+    if (!editField || !song) {
+      setEditField(null);
       return;
     }
+    const field = editField;
+    const raw = editValue.trim();
+    // 値を型に合わせて整形
+    let value: string | number | null;
+    if (field === "level") {
+      const n = Number(raw);
+      value = n >= 1 && n <= 5 ? n : song.level;
+    } else if (field === "title" || field === "artist") {
+      if (!raw) {
+        setEditField(null);
+        return;
+      } // 必須は空なら変更しない
+      value = raw;
+    } else {
+      value = raw || null; // title_ja / description は空なら null
+    }
+    setEditField(null);
+    if (value === (song as unknown as Record<string, unknown>)[field]) return; // 変更なし
     const sb = getSupabase();
     if (!sb) return;
-    setSongSaving(true);
-    setSongFormError("");
     const { error } = await sb
       .from("songs")
-      .update({
-        title: songDraft.title,
-        title_ja: songDraft.title_ja || null,
-        description: songDraft.description || null,
-        artist: songDraft.artist ?? "",
-        youtube_id: videoId,
-        level: Number(songDraft.level ?? 1),
-      })
-      .eq("id", params.id);
-    setSongSaving(false);
-    if (error) setSongFormError(error.message);
-    else {
-      setSongDraft(null);
-      load();
-    }
+      .update({ [field]: value })
+      .eq("id", song.id);
+    if (error) setLoadError(error.message);
+    else setSong({ ...song, [field]: value } as Song);
   }
 
   // 曲ごと削除（歌詞行も削除して一覧へ戻る）
@@ -508,7 +489,7 @@ export default function SongLinesPage() {
         </p>
       )}
       {/* タイトル・操作ボタン・プレイヤーをまとめて上部固定 */}
-      <div className="sticky top-0 z-20 mb-5 bg-zinc-50 pb-3 pt-1">
+      <div className="sticky top-0 z-20 mb-2 bg-zinc-50 pb-2 pt-1">
       <div className="mb-3 flex items-start justify-between gap-4">
         <div>
           <h1 className="flex flex-wrap items-center gap-x-3 gap-y-2 text-2xl font-bold tracking-tight text-black">
@@ -525,10 +506,21 @@ export default function SongLinesPage() {
           </h1>
         </div>
         <div className="flex shrink-0 flex-wrap justify-end gap-2">
-          <Button variant="ghost" onClick={() => setSongDraft(song)}>
-            曲情報を編集
+          <Button
+            onClick={() => {
+              // 直前（最後）の行の終了秒を新規行の開始秒に自動入力
+              const lastEnd = lines.reduce(
+                (m, l) => Math.max(m, l.end_sec),
+                0,
+              );
+              setDraft({
+                ...emptyDraft(),
+                startText: lastEnd > 0 ? formatTime(lastEnd) : "",
+              });
+            }}
+          >
+            ＋ 歌詞行を追加
           </Button>
-          <Button onClick={() => setDraft(emptyDraft())}>＋ 歌詞行を追加</Button>
           <Button variant="ghost" onClick={() => setPasteOpen(true)}>
             歌詞を貼り付け
           </Button>
@@ -553,44 +545,144 @@ export default function SongLinesPage() {
                   playerVars: {
                     rel: 0,
                     playsinline: 1,
-                    controls: 0, // シークバー無効（再生/停止は下のボタンで）
-                    disablekb: 1,
                     modestbranding: 1,
                   },
                 }}
                 onReady={(e) => {
                   playerRef.current = e.target;
                 }}
-                onStateChange={(e) => {
-                  if (e.data === 1) {
-                    startPolling();
-                    setPlaying(true);
-                  } else {
-                    setPlaying(false);
-                  }
-                }}
               />
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Button onClick={togglePlay} className="min-w-[7rem] text-center">
-              {playing ? "⏸ 一時停止" : "▶ 再生"}
-            </Button>
-            <div>
-              <p className="text-xs font-bold text-zinc-500">現在の再生位置</p>
-              <p className="text-3xl font-bold tracking-tight text-black">
-                {nowText}
-                <span className="ml-1 text-sm font-medium">秒</span>
-              </p>
+          {/* 曲情報欄（各項目をクリックでその場編集・枠なし） */}
+          <div className="flex-1">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              {/* レベル */}
+              {editField === "level" ? (
+                <input
+                  type="number"
+                  min={1}
+                  max={5}
+                  autoFocus
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onBlur={commitField}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitField();
+                    if (e.key === "Escape") setEditField(null);
+                  }}
+                  className="w-14 border-2 border-black px-1 py-0.5 text-xs font-bold"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => startFieldEdit("level", String(song.level))}
+                  className="inline-block shrink-0 border-2 border-black bg-accent px-2 py-0.5 text-xs font-bold text-black hover:opacity-80"
+                >
+                  Lv.{song.level}
+                </button>
+              )}
+              {/* 原題 */}
+              {editField === "title" ? (
+                <input
+                  autoFocus
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onBlur={commitField}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitField();
+                    if (e.key === "Escape") setEditField(null);
+                  }}
+                  className="border-2 border-black px-2 py-0.5 text-sm font-bold"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => startFieldEdit("title", song.title)}
+                  className="font-bold tracking-tight text-black underline decoration-dotted underline-offset-2 hover:bg-accent"
+                >
+                  {song.title}
+                </button>
+              )}
+              {/* 日本語名 */}
+              {editField === "title_ja" ? (
+                <input
+                  autoFocus
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onBlur={commitField}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitField();
+                    if (e.key === "Escape") setEditField(null);
+                  }}
+                  className="border-2 border-black px-2 py-0.5 text-sm font-bold"
+                  placeholder="日本語名"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => startFieldEdit("title_ja", song.title_ja ?? "")}
+                  className="text-sm font-bold text-zinc-600 underline decoration-dotted underline-offset-2 hover:bg-accent"
+                >
+                  {song.title_ja || "＋日本語名"}
+                </button>
+              )}
+              {/* アーティスト */}
+              {editField === "artist" ? (
+                <input
+                  autoFocus
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onBlur={commitField}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitField();
+                    if (e.key === "Escape") setEditField(null);
+                  }}
+                  className="border-2 border-black px-2 py-0.5 text-sm"
+                  placeholder="アーティスト"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => startFieldEdit("artist", song.artist)}
+                  className="text-sm font-medium text-zinc-500 underline decoration-dotted underline-offset-2 hover:bg-accent"
+                >
+                  {song.artist || "＋アーティスト"}
+                </button>
+              )}
             </div>
-            <Button variant="ghost" onClick={copyNow}>
-              現在秒をコピー
-            </Button>
+            {/* 説明 */}
+            <div className="mt-2">
+              {editField === "description" ? (
+                <textarea
+                  autoFocus
+                  rows={2}
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onBlur={commitField}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") setEditField(null);
+                  }}
+                  className="w-full border-2 border-black px-2 py-1 text-sm"
+                  placeholder="曲の説明"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() =>
+                    startFieldEdit("description", song.description ?? "")
+                  }
+                  className="block w-full whitespace-pre-line text-left text-sm text-zinc-600 underline decoration-dotted underline-offset-2 hover:bg-accent"
+                >
+                  {song.description || "＋曲の説明"}
+                </button>
+              )}
+            </div>
+            <p className="mt-1 text-[11px] text-zinc-400">
+              各項目をクリックでその場編集
+            </p>
           </div>
         </div>
-        <p className="mt-2 text-xs text-zinc-400">
-          シークバーは無効です。再生/一時停止ボタンで操作し、各行の時間（クリックで編集）に現在秒を入力できます。
-        </p>
       </div>
       </div>
 
@@ -915,7 +1007,7 @@ export default function SongLinesPage() {
               <th className="text-left">歌詞</th>
               <th className="text-left">意味</th>
               <th className="text-left">クイズ</th>
-              <th className="text-right">操作</th>
+              <th className="text-left">操作</th>
               <th className="py-2 text-center">
                 <input
                   type="checkbox"
@@ -1030,8 +1122,8 @@ export default function SongLinesPage() {
                     );
                   })()}
                 </td>
-                <td className="text-right">
-                  <div className="flex justify-end gap-2">
+                <td className="text-left">
+                  <div className="flex gap-2">
                     <Button variant="ghost" onClick={() => startEdit(l)}>
                       編集
                     </Button>
@@ -1101,98 +1193,6 @@ export default function SongLinesPage() {
           この曲を削除
         </Button>
       </div>
-
-      {/* 曲情報の編集モーダル */}
-      {songDraft && (
-        <div
-          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4"
-          onClick={() => setSongDraft(null)}
-        >
-          <div
-            className="my-8 w-full max-w-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Card>
-              <h2 className="mb-4 text-lg font-bold tracking-tight text-black">
-                曲情報を編集
-              </h2>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="原題（原語タイトル）">
-                  <TextInput
-                    value={songDraft.title ?? ""}
-                    onChange={(e) =>
-                      setSongDraft({ ...songDraft, title: e.target.value })
-                    }
-                  />
-                </Field>
-                <Field label="日本語タイトル">
-                  <TextInput
-                    value={songDraft.title_ja ?? ""}
-                    onChange={(e) =>
-                      setSongDraft({ ...songDraft, title_ja: e.target.value })
-                    }
-                  />
-                </Field>
-                <Field label="アーティスト">
-                  <TextInput
-                    value={songDraft.artist ?? ""}
-                    onChange={(e) =>
-                      setSongDraft({ ...songDraft, artist: e.target.value })
-                    }
-                  />
-                </Field>
-                <Field label="YouTube URL（リンクをそのまま貼れます）">
-                  <TextInput
-                    value={songDraft.youtube_id ?? ""}
-                    onChange={(e) =>
-                      setSongDraft({ ...songDraft, youtube_id: e.target.value })
-                    }
-                  />
-                </Field>
-                <Field label="レベル (1〜5)">
-                  <TextInput
-                    type="number"
-                    min={1}
-                    max={5}
-                    value={songDraft.level ?? 1}
-                    onChange={(e) =>
-                      setSongDraft({
-                        ...songDraft,
-                        level: Number(e.target.value) as Song["level"],
-                      })
-                    }
-                  />
-                </Field>
-              </div>
-              <div className="mt-4">
-                <Field label="曲の説明（任意）">
-                  <TextArea
-                    rows={2}
-                    value={songDraft.description ?? ""}
-                    onChange={(e) =>
-                      setSongDraft({
-                        ...songDraft,
-                        description: e.target.value,
-                      })
-                    }
-                  />
-                </Field>
-              </div>
-              {songFormError && (
-                <p className="mt-3 text-sm text-rose-500">{songFormError}</p>
-              )}
-              <div className="mt-4 flex gap-2">
-                <Button onClick={saveSong} disabled={songSaving}>
-                  {songSaving ? "保存中…" : "保存"}
-                </Button>
-                <Button variant="ghost" onClick={() => setSongDraft(null)}>
-                  キャンセル
-                </Button>
-              </div>
-            </Card>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
