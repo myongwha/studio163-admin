@@ -68,6 +68,7 @@ export default function SongLinesPage() {
   const [editField, setEditField] = useState<EditableSongField | null>(null);
   const [editValue, setEditValue] = useState("");
   const [draft, setDraft] = useState<LineDraft | null>(null);
+  const [modalTab, setModalTab] = useState<"basic" | "quiz">("basic");
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const [pasteOpen, setPasteOpen] = useState(false);
@@ -179,9 +180,17 @@ export default function SongLinesPage() {
   }
 
   function startEdit(line: SongLine) {
+    setModalTab("basic");
+    // まだ時間未設定(0/0)の行を編集する時は、他行の最大終了秒を開始秒に自動入力
+    const untimed = (line.start_sec ?? 0) === 0 && (line.end_sec ?? 0) === 0;
+    const lastEnd = lines.reduce(
+      (m, l) => (l.id === line.id ? m : Math.max(m, Number(l.end_sec) || 0)),
+      0,
+    );
     setDraft({
       id: line.id,
-      startText: formatTime(line.start_sec),
+      startText:
+        untimed && lastEnd > 0 ? formatTime(lastEnd) : formatTime(line.start_sec),
       endText: formatTime(line.end_sec),
       korean_text: line.korean_text,
       meaning_ja: line.meaning_ja,
@@ -509,10 +518,12 @@ export default function SongLinesPage() {
           <Button
             onClick={() => {
               // 直前（最後）の行の終了秒を新規行の開始秒に自動入力
+              // （null/未設定があっても NaN にならないよう Number||0 でガード）
               const lastEnd = lines.reduce(
-                (m, l) => Math.max(m, l.end_sec),
+                (m, l) => Math.max(m, Number(l.end_sec) || 0),
                 0,
               );
+              setModalTab("basic");
               setDraft({
                 ...emptyDraft(),
                 startText: lastEnd > 0 ? formatTime(lastEnd) : "",
@@ -739,6 +750,31 @@ export default function SongLinesPage() {
                 ✕
               </button>
             </div>
+
+            {/* タブ（基本情報 / クイズ） */}
+            <div className="mb-4 flex gap-2">
+              {(
+                [
+                  ["basic", "歌詞・時間"],
+                  ["quiz", "クイズ"],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setModalTab(key)}
+                  className={`border-2 border-black px-4 py-1.5 text-sm font-bold transition-colors ${
+                    modalTab === key
+                      ? "bg-black text-white"
+                      : "bg-white text-black hover:bg-accent"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className={modalTab === "basic" ? "" : "hidden"}>
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="開始秒（小数可・例 12.34）">
                 <TextInput
@@ -828,9 +864,17 @@ export default function SongLinesPage() {
                 </p>
               </div>
             )}
+            </div>
+            {/* /歌詞・時間タブ */}
 
+            <div className={modalTab === "quiz" ? "" : "hidden"}>
+            {draft.isInterlude && (
+              <p className="text-sm text-zinc-500">
+                間奏行（前奏/間奏/後奏）にはクイズを作成できません。
+              </p>
+            )}
             {!draft.isInterlude && (
-              <div className="mt-4">
+              <div>
                 <label className="flex items-center gap-2 text-sm font-bold text-black">
                   <input
                     type="checkbox"
@@ -965,23 +1009,11 @@ export default function SongLinesPage() {
                       )}
                     </div>
 
-                    {/* ③ 回答 */}
-                    <div>
-                      <p className="mb-2 text-sm font-bold text-black">
-                        ③ 回答
-                      </p>
-                      <Field label="自然な翻訳（任意）">
-                        <TextInput
-                          value={draft.natural_ja}
-                          onChange={(e) =>
-                            setDraft({ ...draft, natural_ja: e.target.value })
-                          }
-                        />
-                      </Field>
-                    </div>
                   </div>
                 );
               })()}
+            </div>
+            {/* /クイズタブ */}
 
             {formError && (
               <p className="mt-3 text-sm text-rose-500">{formError}</p>
