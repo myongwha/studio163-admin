@@ -173,7 +173,7 @@ export default function SentencesPage() {
                 <th className="py-2">韓国語</th>
                 <th>意味</th>
                 <th>単元</th>
-                <th className="text-right">操作</th>
+                <th className="text-center">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -182,8 +182,8 @@ export default function SentencesPage() {
                   <td className="py-2 font-bold text-slate-700">{s.korean}</td>
                   <td className="text-slate-500">{s.meaning_ja}</td>
                   <td className="text-slate-400">{unitTitle(s.unit_id)}</td>
-                  <td className="text-right">
-                    <div className="flex justify-end gap-2">
+                  <td className="text-center">
+                    <div className="flex justify-center gap-2">
                       <Button variant="ghost" onClick={() => startEdit(s)}>
                         編集
                       </Button>

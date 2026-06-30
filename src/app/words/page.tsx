@@ -193,7 +193,7 @@ export default function WordsPage() {
                 <th>発音</th>
                 <th>意味</th>
                 <th>単元</th>
-                <th className="text-right">操作</th>
+                <th className="text-center">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -203,8 +203,8 @@ export default function WordsPage() {
                   <td className="text-slate-500">{w.reading}</td>
                   <td className="text-slate-500">{w.meaning_ja}</td>
                   <td className="text-slate-400">{unitTitle(w.unit_id)}</td>
-                  <td className="text-right">
-                    <div className="flex justify-end gap-2">
+                  <td className="text-center">
+                    <div className="flex justify-center gap-2">
                       <Button variant="ghost" onClick={() => setDraft(w)}>
                         編集
                       </Button>

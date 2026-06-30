@@ -124,7 +124,7 @@ export default function UnitsPage() {
                 <th>タイトル</th>
                 <th>Lv</th>
                 <th>説明</th>
-                <th className="text-right">操作</th>
+                <th className="text-center">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -136,8 +136,8 @@ export default function UnitsPage() {
                   <td className="max-w-xs truncate text-slate-500">
                     {u.description}
                   </td>
-                  <td className="text-right">
-                    <div className="flex justify-end gap-2">
+                  <td className="text-center">
+                    <div className="flex justify-center gap-2">
                       <Button variant="ghost" onClick={() => setDraft(u)}>
                         編集
                       </Button>
