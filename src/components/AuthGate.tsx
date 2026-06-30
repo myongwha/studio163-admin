@@ -61,7 +61,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     <Ctx.Provider value={{ session, signOut }}>
       <div className="flex min-h-dvh">
         <Sidebar onSignOut={signOut} email={session.user.email ?? ""} />
-        <main className="flex-1 overflow-x-hidden bg-zinc-50 p-8">
+        <main className="flex-1 overflow-x-clip bg-zinc-50 p-8">
           <div className="mx-auto max-w-7xl">{children}</div>
         </main>
       </div>

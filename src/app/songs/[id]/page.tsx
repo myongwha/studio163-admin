@@ -9,7 +9,6 @@ import { getSupabase } from "@/lib/supabase";
 import type { Song, SongLine, SongLineQuiz } from "@/lib/types";
 import { Button, Field, TextInput, Card, TextArea } from "@/components/ui";
 import { formatTime, parseTime } from "@/lib/time";
-import { parseQuizNotation } from "@/lib/quizNotation";
 import {
   QuizAuthoring,
   AuthorOption,
@@ -27,11 +26,15 @@ interface LineDraft {
   korean_text: string;
   meaning_ja: string;
   isInterlude: boolean;
+  interludeKind: InterludeKind; // 前奏/間奏/後奏（isInterlude時のみ有効）
   quizEnabled: boolean;
   authoring: QuizAuthoring;
   explanation: string;
   natural_ja: string;
 }
+
+type InterludeKind = "前奏" | "間奏" | "後奏";
+const INTERLUDE_KINDS: InterludeKind[] = ["前奏", "間奏", "後奏"];
 
 const emptyDraft = (): LineDraft => ({
   startText: "",
@@ -39,6 +42,7 @@ const emptyDraft = (): LineDraft => ({
   korean_text: "",
   meaning_ja: "",
   isInterlude: false,
+  interludeKind: "間奏",
   quizEnabled: false,
   authoring: emptyQuizAuthoring(),
   explanation: "",
@@ -58,10 +62,6 @@ export default function SongLinesPage() {
   const [pasteText, setPasteText] = useState("");
   const [pasteSaving, setPasteSaving] = useState(false);
   const [pasteError, setPasteError] = useState("");
-  const [notationOpen, setNotationOpen] = useState(false);
-  const [notationText, setNotationText] = useState("");
-  const [notationSaving, setNotationSaving] = useState(false);
-  const [notationError, setNotationError] = useState("");
   const [inlineId, setInlineId] = useState<string | null>(null);
   const [inlineStart, setInlineStart] = useState("");
   const [inlineEnd, setInlineEnd] = useState("");
@@ -153,6 +153,9 @@ export default function SongLinesPage() {
       korean_text: line.korean_text,
       meaning_ja: line.meaning_ja,
       isInterlude: line.is_interlude ?? false,
+      interludeKind: (INTERLUDE_KINDS as string[]).includes(line.korean_text)
+        ? (line.korean_text as InterludeKind)
+        : "間奏",
       quizEnabled:
         !!line.quiz_authoring ||
         !!(line.quizzes && line.quizzes.length) ||
@@ -270,7 +273,8 @@ export default function SongLinesPage() {
     let builtQuizzes: SongLineQuiz[] | null = null;
     let quizAuthoring: QuizAuthoring | null = null;
     if (draft.isInterlude) {
-      korean_text = "";
+      // 間奏行は歌詞欄に種別ラベル（前奏/間奏/後奏）を保存して表示に使う
+      korean_text = draft.interludeKind;
     } else {
       korean_text = draft.korean_text.trim();
       if (!korean_text) {
@@ -428,40 +432,6 @@ export default function SongLinesPage() {
     }
   }
 
-  async function registerNotation() {
-    const parsed = parseQuizNotation(notationText);
-    if (parsed.length === 0) {
-      setNotationError("登録できる行がありません");
-      return;
-    }
-    const sb = getSupabase();
-    if (!sb) return;
-    setNotationSaving(true);
-    setNotationError("");
-    const base = lines.length
-      ? Math.max(...lines.map((l) => l.order_index ?? 0)) + 1
-      : 0;
-    const rows = parsed.map((p, i) => ({
-      song_id: params.id,
-      start_sec: 0,
-      end_sec: 0,
-      korean_text: p.korean_text,
-      meaning_ja: p.meaning_ja,
-      explanation: null,
-      is_interlude: false,
-      quiz: null,
-      quizzes: p.quizzes.length ? p.quizzes : null,
-      order_index: base + i,
-    }));
-    const { error } = await sb.from("song_lines").insert(rows);
-    setNotationSaving(false);
-    if (error) setNotationError(error.message);
-    else {
-      setNotationText("");
-      setNotationOpen(false);
-      load();
-    }
-  }
 
   if (loading) return <p className="text-zinc-400">読み込み中…</p>;
   if (!song)
@@ -480,12 +450,6 @@ export default function SongLinesPage() {
 
   return (
     <div>
-      <Link
-        href="/songs"
-        className="text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-900"
-      >
-        ← 楽曲一覧
-      </Link>
       {loadError && (
         <p className="mt-2 border-2 border-black bg-zinc-50 px-3 py-2 text-sm font-medium text-rose-600">
           読み込みエラー: {loadError}
@@ -511,9 +475,6 @@ export default function SongLinesPage() {
           <Button variant="ghost" onClick={() => setPasteOpen(true)}>
             歌詞を貼り付け
           </Button>
-          <Button variant="ghost" onClick={() => setNotationOpen(true)}>
-            記法で登録
-          </Button>
           {selected.length > 0 && (
             <Button variant="danger" onClick={deleteSelected}>
               選択削除（{selected.length}）
@@ -522,8 +483,14 @@ export default function SongLinesPage() {
         </div>
       </div>
 
-      {/* 編集用 YouTube プレイヤー（再生しながら秒数・クイズを設定） */}
+      {/* 編集用 YouTube プレイヤー（再生しながら秒数・クイズを設定）。上部固定 */}
       <div className="sticky top-0 z-10 mb-5 border-2 border-black bg-white p-3">
+        <Link
+          href="/songs"
+          className="mb-2 inline-block text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-900"
+        >
+          ← 楽曲一覧
+        </Link>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="w-full shrink-0 border-2 border-black bg-black sm:w-72">
             <div className="aspect-video">
@@ -613,54 +580,6 @@ export default function SongLinesPage() {
         </div>
       )}
 
-      {notationOpen && (
-        <div className="mb-6">
-          <Card>
-            <p className="text-sm font-bold text-zinc-600">
-              記法で書いた歌詞＋クイズをまとめて登録します。1ブロック（空行区切り）が1歌詞行になります。
-            </p>
-            <pre className="mt-3 whitespace-pre-wrap text-xs text-zinc-500">{`例（1ブロック=1歌詞行 / 空行で区切る）:
-#1<살다 보면> 시련은 분명히 있을 거야
-生きていれば試練はきっとあるはずだ
-1.하고 2.틀려도 3.살다 보면 [#1] 4.생각해
-
-・#N<答え> が空欄（#1 #2… 複数可）
-・[#N] を含む行がその空欄の選択肢（先頭の「数字.」は除去、選択肢は1個でも可）
-・選択肢行が無い空欄は答えのみの1択
-・#N<> が無いブロックはクイズ無しの通常歌詞`}</pre>
-            <div className="mt-4">
-              <Field label="記法テキスト">
-                <TextArea
-                  rows={14}
-                  value={notationText}
-                  onChange={(e) => setNotationText(e.target.value)}
-                  placeholder={`#1<살다 보면> 시련은 분명히 있을 거야
-生きていれば試練はきっとあるはずだ
-1.하고 2.틀려도 3.살다 보면 [#1] 4.생각해`}
-                />
-              </Field>
-            </div>
-            {notationError && (
-              <p className="mt-3 text-sm text-rose-600">{notationError}</p>
-            )}
-            <div className="mt-4 flex gap-2">
-              <Button onClick={registerNotation} disabled={notationSaving}>
-                {notationSaving ? "登録中…" : "登録"}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setNotationOpen(false);
-                  setNotationText("");
-                  setNotationError("");
-                }}
-              >
-                キャンセル
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
 
       {draft && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4">
@@ -697,17 +616,32 @@ export default function SongLinesPage() {
               </Field>
             </div>
 
-            <div className="mt-4">
-              <label className="flex items-center gap-2 text-sm font-bold text-black">
-                <input
-                  type="checkbox"
-                  checked={draft.isInterlude}
-                  onChange={(e) =>
-                    setDraft({ ...draft, isInterlude: e.target.checked })
-                  }
-                />
-                間奏（歌詞なし）
-              </label>
+            <div className="mt-4 flex flex-wrap items-center gap-4">
+              <span className="text-sm font-bold text-black">
+                器楽パート（歌詞なし）
+              </span>
+              {INTERLUDE_KINDS.map((kind) => {
+                const active = draft.isInterlude && draft.interludeKind === kind;
+                return (
+                  <label
+                    key={kind}
+                    className="flex items-center gap-1.5 text-sm font-bold text-black"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={active}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          isInterlude: e.target.checked,
+                          interludeKind: kind,
+                        })
+                      }
+                    />
+                    {kind}
+                  </label>
+                );
+              })}
             </div>
 
             <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -925,6 +859,11 @@ export default function SongLinesPage() {
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-slate-400">
+              <th className="py-2 text-left">時間</th>
+              <th className="text-left">歌詞</th>
+              <th className="text-left">意味</th>
+              <th className="text-left">クイズ</th>
+              <th className="text-right">操作</th>
               <th className="py-2 text-center">
                 <input
                   type="checkbox"
@@ -933,24 +872,11 @@ export default function SongLinesPage() {
                   onChange={toggleSelectAll}
                 />
               </th>
-              <th className="py-2 text-center">時間</th>
-              <th className="text-center">歌詞</th>
-              <th className="text-center">意味</th>
-              <th className="text-center">クイズ</th>
-              <th className="text-center">操作</th>
             </tr>
           </thead>
           <tbody>
             {lines.map((l) => (
               <tr key={l.id} className="border-b border-slate-50">
-                <td className="py-2 text-center align-middle">
-                  <input
-                    type="checkbox"
-                    aria-label="選択"
-                    checked={selected.includes(l.id)}
-                    onChange={() => toggleSelect(l.id)}
-                  />
-                </td>
                 <td className="py-2 text-slate-400">
                   {inlineId === l.id ? (
                     <div className="flex flex-col gap-1">
@@ -1018,7 +944,9 @@ export default function SongLinesPage() {
                 </td>
                 <td className="font-medium text-zinc-800">
                   {l.is_interlude ? (
-                    <span className="text-zinc-400">（間奏）</span>
+                    <span className="text-zinc-400">
+                      （{l.korean_text || "間奏"}）
+                    </span>
                   ) : (
                     l.korean_text
                   )}
@@ -1056,6 +984,14 @@ export default function SongLinesPage() {
                       削除
                     </Button>
                   </div>
+                </td>
+                <td className="py-2 text-center align-middle">
+                  <input
+                    type="checkbox"
+                    aria-label="選択"
+                    checked={selected.includes(l.id)}
+                    onChange={() => toggleSelect(l.id)}
+                  />
                 </td>
               </tr>
             ))}
