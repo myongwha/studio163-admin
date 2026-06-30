@@ -498,7 +498,7 @@ export default function SongLinesPage() {
         </p>
       )}
       {/* タイトル・操作ボタン・プレイヤーをまとめて上部固定 */}
-      <div className="sticky top-0 z-20 mb-2 bg-zinc-50 pb-2 pt-1">
+      <div className="sticky top-0 z-20 mb-0 bg-zinc-50 pb-1 pt-1">
       <div className="mb-3 flex items-start justify-between gap-4">
         <div>
           <h1 className="flex flex-wrap items-center gap-x-3 gap-y-2 text-2xl font-bold tracking-tight text-black">
@@ -1031,15 +1031,15 @@ export default function SongLinesPage() {
         </div>
       )}
 
-      <Card>
+      <div className="border-2 border-black bg-white p-3">
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-slate-400">
-              <th className="py-2 text-left">時間</th>
+              <th className="py-1 text-left">時間</th>
               <th className="text-left">歌詞</th>
               <th className="text-left">意味</th>
-              <th className="text-left">クイズ</th>
-              <th className="text-left">操作</th>
+              <th className="text-center">クイズ</th>
+              <th className="text-center">操作</th>
               <th className="py-2 text-center">
                 <input
                   type="checkbox"
@@ -1137,7 +1137,7 @@ export default function SongLinesPage() {
                     {l.meaning_ja}
                   </div>
                 </td>
-                <td>
+                <td className="text-center">
                   {(() => {
                     const qs =
                       l.quizzes && l.quizzes.length
@@ -1154,8 +1154,8 @@ export default function SongLinesPage() {
                     );
                   })()}
                 </td>
-                <td className="text-left">
-                  <div className="flex gap-2">
+                <td className="text-center">
+                  <div className="flex justify-center gap-2">
                     <Button variant="ghost" onClick={() => startEdit(l)}>
                       編集
                     </Button>
@@ -1189,7 +1189,7 @@ export default function SongLinesPage() {
             )}
           </tbody>
         </table>
-      </Card>
+      </div>
 
       {/* 選択範囲を空欄化する右クリックメニュー */}
       {ctx && (
