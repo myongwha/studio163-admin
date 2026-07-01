@@ -39,9 +39,9 @@ function CategoryColumn({
 
   return (
     <div className="flex-1">
-      <p className="mb-2 text-sm font-bold text-black">{title}</p>
+      <p className="mb-2 text-sm font-bold text-zinc-900">{title}</p>
       {disabled ? (
-        <p className="text-xs text-slate-400">{disabledHint}</p>
+        <p className="text-xs text-zinc-400">{disabledHint}</p>
       ) : (
         <>
           <div className="mb-3 flex gap-2">
@@ -98,8 +98,8 @@ function CategoryColumn({
                     <div
                       className={`flex items-center gap-1 border px-2 py-1.5 ${
                         active
-                          ? "border-black bg-black text-white"
-                          : "border-slate-200 text-black"
+                          ? "border-zinc-300 bg-black text-white"
+                          : "border-zinc-200 text-zinc-900"
                       }`}
                     >
                       <button
@@ -114,7 +114,7 @@ function CategoryColumn({
                           setEditName(c.name);
                         }}
                         className={`shrink-0 px-1 text-xs ${
-                          active ? "text-white/80" : "text-slate-400"
+                          active ? "text-white/80" : "text-zinc-400"
                         }`}
                       >
                         編集
@@ -133,7 +133,7 @@ function CategoryColumn({
               );
             })}
             {items.length === 0 && (
-              <li className="text-xs text-slate-400">まだありません。</li>
+              <li className="text-xs text-zinc-400">まだありません。</li>
             )}
           </ul>
         </>
@@ -176,13 +176,13 @@ export default function CategoriesPage() {
     <div>
       <PageHeader
         title="カテゴリー"
-        subtitle="大 › 中 › 小 の階層で管理。単語の登録時にプルダウンで選べます"
+        subtitle="大 › 中 › 小 の階層で管理。単語・文章の登録時にプルダウンで選べます"
       />
 
       {error && <p className="mb-4 text-sm text-rose-500">{error}</p>}
 
       {loading ? (
-        <p className="text-slate-400">読み込み中…</p>
+        <p className="text-zinc-400">読み込み中…</p>
       ) : (
         <Card>
           <div className="flex flex-col gap-6 md:flex-row md:gap-4">

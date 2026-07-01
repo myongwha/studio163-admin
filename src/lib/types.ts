@@ -44,6 +44,14 @@ export interface Word {
   antonym?: string | null; // 対義語
   synonym?: string | null; // 類義語
   conjugations?: ConjugationVariation[]; // 活用形（韓国語：日本語のバリエーション）
+  image?: string | null; // 挿絵（画像URL・任意）
+  image_source?: string | null; // 画像の引用元（出典・任意）
+  reference_url?: string | null; // 参考資料URL（管理用・ユーザー非表示）
+  meanings?: string[]; // 複数の意味（先頭は meaning_ja と同一）
+  is_noun?: boolean; // 名詞
+  is_adjective?: boolean; // 形容詞
+  is_verb?: boolean; // 動詞
+  is_base_form?: boolean; // 原形（用言の基本形）
 }
 
 export interface Sentence {
@@ -53,6 +61,13 @@ export interface Sentence {
   meaning_ja: string;
   tokens: string[];
   level: number;
+  image?: string | null; // 挿絵（画像URL・任意）
+  image_source?: string | null; // 画像の引用元（出典・任意）
+  meanings?: string[]; // 複数の意味（先頭は meaning_ja と同一）
+  reference_url?: string | null; // 参考資料URL（管理用・ユーザー非表示）
+  category_large?: string | null; // 大カテゴリー
+  category_medium?: string | null; // 中カテゴリー
+  category_small?: string | null; // 小カテゴリー
 }
 
 // 文法学習コース（1ページ目＝構造化／2ページ目以降＝ブログ形式）

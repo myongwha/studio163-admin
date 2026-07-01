@@ -1,9 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #000000;
-  --accent: #d8fb00;
+  /* モノトーン基調：紙のようなグレー地に白カード、極細のグレー罫線 */
+  --background: #f4f4f5; /* zinc-100 : アプリ背景 */
+  --foreground: #18181b; /* zinc-900 : 本文 */
+  --accent: #d8fb00; /* ネオンライム : モノトーン基調の差し色として保持 */
 }
 
 @theme inline {
@@ -19,5 +20,13 @@ body {
   font-family: var(--font-sans), "Hiragino Kaku Gothic ProN", "Yu Gothic",
     Meiryo, sans-serif;
   -webkit-font-smoothing: antialiased;
-  letter-spacing: -0.02em;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.011em;
+}
+
+/* 角丸は使わない方針：全要素の border-radius を無効化 */
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
 }

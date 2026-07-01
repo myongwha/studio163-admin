@@ -15,6 +15,7 @@ import {
   TextArea,
   Card,
 } from "@/components/ui";
+import { ImageUpload } from "@/components/ImageUpload";
 
 type Draft = Partial<GrammarLesson>;
 
@@ -106,10 +107,19 @@ export default function GrammarAdminPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <Card>
-              <h2 className="mb-4 text-lg font-bold tracking-tight text-black">
+              <h2 className="mb-4 text-lg font-bold tracking-tight text-zinc-900">
                 {draft.id ? "文法を編集" : "文法を新規作成"}
               </h2>
 
+              <div className="mb-4">
+                <Field label="写真（任意・1ページ目）">
+                  <ImageUpload
+                    value={draft.image}
+                    onChange={(url) => setDraft({ ...draft, image: url })}
+                    folder="grammar"
+                  />
+                </Field>
+              </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <Field label="文法名">
                   <TextInput
@@ -143,30 +153,10 @@ export default function GrammarAdminPage() {
                   />
                 </Field>
               </div>
-              <div className="mt-4">
-                <Field label="写真URL（任意・1ページ目）">
-                  <TextInput
-                    value={draft.image ?? ""}
-                    onChange={(e) =>
-                      setDraft({ ...draft, image: e.target.value })
-                    }
-                    placeholder="https://… 画像URL"
-                  />
-                </Field>
-                {draft.image && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={draft.image}
-                    alt=""
-                    className="mt-2 h-28 w-48 border-2 border-black object-cover"
-                  />
-                )}
-              </div>
-
               {/* 例文（1ページ目） */}
               <div className="mt-6">
                 <div className="mb-2 flex items-center justify-between">
-                  <p className="text-sm font-bold text-black">
+                  <p className="text-sm font-bold text-zinc-900">
                     例文（1ページ目）
                   </p>
                   <Button variant="ghost" onClick={addExample}>
@@ -206,7 +196,7 @@ export default function GrammarAdminPage() {
               {/* 追加ページ（2ページ目以降・ブログ形式） */}
               <div className="mt-6">
                 <div className="mb-2 flex items-center justify-between">
-                  <p className="text-sm font-bold text-black">
+                  <p className="text-sm font-bold text-zinc-900">
                     追加ページ（2ページ目以降・{pages.length}）
                   </p>
                   <Button variant="ghost" onClick={addPage}>
@@ -215,7 +205,7 @@ export default function GrammarAdminPage() {
                 </div>
                 <div className="flex flex-col gap-4">
                   {pages.map((p, i) => (
-                    <div key={i} className="border-2 border-black p-3">
+                    <div key={i} className="border border-zinc-200 p-3">
                       <div className="mb-2 flex items-center justify-between">
                         <span className="text-xs font-bold text-zinc-500">
                           ページ {i + 1}
@@ -286,12 +276,12 @@ export default function GrammarAdminPage() {
       )}
 
       {loading ? (
-        <p className="text-slate-400">読み込み中…</p>
+        <p className="text-zinc-400">読み込み中…</p>
       ) : (
         <Card>
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-100 text-slate-400">
+              <tr className="border-b border-zinc-200 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
                 <th className="py-2">文法名</th>
                 <th className="text-center">Lv</th>
                 <th className="text-center">ページ数</th>
@@ -300,10 +290,10 @@ export default function GrammarAdminPage() {
             </thead>
             <tbody>
               {rows.map((g) => (
-                <tr key={g.id} className="border-b border-slate-50">
-                  <td className="py-2 font-bold text-slate-700">{g.title}</td>
-                  <td className="text-center text-slate-500">{g.level}</td>
-                  <td className="text-center text-slate-500">
+                <tr key={g.id} className="border-b border-zinc-100">
+                  <td className="py-2 font-bold text-zinc-700">{g.title}</td>
+                  <td className="text-center text-zinc-500">{g.level}</td>
+                  <td className="text-center text-zinc-500">
                     {g.pages?.length ?? 0}
                   </td>
                   <td className="text-center">
@@ -326,7 +316,7 @@ export default function GrammarAdminPage() {
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-6 text-center text-slate-400">
+                  <td colSpan={4} className="py-6 text-center text-zinc-400">
                     文法がありません。
                   </td>
                 </tr>

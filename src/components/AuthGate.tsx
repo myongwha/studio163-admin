@@ -47,7 +47,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (!isSupabaseConfigured) return <ConfigNotice />;
   if (loading)
     return (
-      <div className="grid min-h-dvh place-items-center text-slate-400">
+      <div className="grid min-h-dvh place-items-center text-zinc-400">
         読み込み中…
       </div>
     );
@@ -59,9 +59,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   return (
     <Ctx.Provider value={{ session, signOut }}>
-      <div className="flex min-h-dvh">
+      <div className="flex h-dvh overflow-hidden bg-zinc-100">
         <Sidebar onSignOut={signOut} email={session.user.email ?? ""} />
-        <main className="flex-1 overflow-x-clip bg-zinc-50 p-8">
+        <main className="flex-1 overflow-y-auto p-10">
           <div className="mx-auto max-w-7xl">{children}</div>
         </main>
       </div>
@@ -88,20 +88,18 @@ function LoginForm() {
   }
 
   return (
-    <div className="grid min-h-dvh place-items-center bg-zinc-50 p-6">
+    <div className="grid min-h-dvh place-items-center bg-zinc-100 p-6">
       <form
         onSubmit={submit}
-        className="w-full max-w-sm border-2 border-black bg-white p-8"
+        className="w-full max-w-sm border border-zinc-200 bg-white p-10"
       >
-        <p className="flex items-baseline text-2xl font-bold tracking-tight">
-          <span className="text-black">studio</span>
-          <span className="text-black/30">163</span>
+        <p className="flex items-baseline gap-0.5 text-2xl font-semibold tracking-tight">
+          <span className="text-zinc-900">studio</span>
+          <span className="text-zinc-300">163</span>
         </p>
-        <p className="mt-1 text-sm font-medium text-zinc-500">
-          管理画面にログイン
-        </p>
+        <p className="mt-1 text-sm text-zinc-500">管理画面にログイン</p>
 
-        <label className="mt-7 block text-sm font-bold text-black">
+        <label className="mt-8 block text-xs font-semibold uppercase tracking-wider text-zinc-500">
           メールアドレス
         </label>
         <input
@@ -109,10 +107,10 @@ function LoginForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="mt-1.5 w-full border-2 border-black px-3 py-2 focus:outline-none"
+          className="mt-1.5 w-full border border-zinc-300 px-3 py-2 text-zinc-900 transition-colors focus:border-zinc-900 focus:outline-none"
         />
 
-        <label className="mt-4 block text-sm font-bold text-black">
+        <label className="mt-4 block text-xs font-semibold uppercase tracking-wider text-zinc-500">
           パスワード
         </label>
         <input
@@ -120,19 +118,19 @@ function LoginForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="mt-1.5 w-full border-2 border-black px-3 py-2 focus:outline-none"
+          className="mt-1.5 w-full border border-zinc-300 px-3 py-2 text-zinc-900 transition-colors focus:border-zinc-900 focus:outline-none"
         />
 
-        {error && <p className="mt-3 text-sm font-medium text-rose-600">{error}</p>}
+        {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
 
         <button
           type="submit"
           disabled={busy}
-          className="mt-6 w-full border-2 border-black bg-black py-2.5 font-bold text-white transition-colors hover:bg-zinc-800 disabled:opacity-40"
+          className="mt-7 w-full border border-zinc-900 bg-zinc-900 py-2.5 font-semibold text-white transition-colors hover:bg-zinc-700 disabled:opacity-40"
         >
           {busy ? "ログイン中…" : "ログイン"}
         </button>
-        <p className="mt-4 text-xs font-medium text-zinc-400">
+        <p className="mt-4 text-xs text-zinc-400">
           管理者ユーザーは Supabase の Authentication で作成してください。
         </p>
       </form>
@@ -142,15 +140,15 @@ function LoginForm() {
 
 function ConfigNotice() {
   return (
-    <div className="grid min-h-dvh place-items-center bg-slate-50 p-6">
-      <div className="max-w-md rounded-2xl bg-white p-8 shadow-sm">
-        <h1 className="text-lg font-black text-slate-800">
+    <div className="grid min-h-dvh place-items-center bg-zinc-100 p-6">
+      <div className="max-w-md border border-zinc-200 bg-white p-10">
+        <h1 className="text-lg font-semibold tracking-tight text-zinc-900">
           Supabase が未設定です
         </h1>
-        <p className="mt-2 text-sm text-slate-500">
+        <p className="mt-2 text-sm text-zinc-500">
           <code>.env.local</code> に下記を設定して再起動してください。
         </p>
-        <pre className="mt-3 overflow-x-auto rounded-xl bg-slate-900 p-4 text-xs text-slate-100">
+        <pre className="mt-4 overflow-x-auto border border-zinc-200 bg-zinc-950 p-4 text-xs text-zinc-100">
           {`NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...`}
         </pre>

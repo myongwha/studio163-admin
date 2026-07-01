@@ -12,11 +12,13 @@ export function PageHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-6 flex items-center justify-between">
+    <div className="sticky top-0 z-20 -mx-10 -mt-10 mb-8 flex items-end justify-between gap-4 border-b border-zinc-200 bg-zinc-100 px-10 pb-5 pt-10">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-black">{title}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+          {title}
+        </h1>
         {subtitle && (
-          <p className="mt-0.5 text-sm font-medium text-zinc-500">{subtitle}</p>
+          <p className="mt-1 text-sm text-zinc-500">{subtitle}</p>
         )}
       </div>
       {action}
@@ -33,14 +35,16 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-bold text-black">{label}</span>
+      <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-zinc-500">
+        {label}
+      </span>
       {children}
     </label>
   );
 }
 
 const inputBase =
-  "w-full border-2 border-black bg-white px-3 py-2 text-black placeholder:text-zinc-300 focus:outline-none focus:bg-accent/20";
+  "w-full border border-zinc-300 bg-white px-3 py-2 text-zinc-900 placeholder:text-zinc-400 transition-colors focus:outline-none focus:border-zinc-900";
 
 export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`${inputBase} ${props.className ?? ""}`} />;
@@ -68,20 +72,18 @@ export function Button({
   variant?: "primary" | "ghost" | "danger";
 }) {
   const styles = {
-    primary: "border-black bg-black text-white hover:bg-zinc-800",
-    ghost: "border-black bg-white text-black hover:bg-accent",
-    danger: "border-black bg-white text-rose-600 hover:bg-rose-50",
+    primary: "border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-700 hover:border-zinc-700",
+    ghost: "border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-100 hover:border-zinc-400",
+    danger: "border-zinc-300 bg-white text-rose-600 hover:bg-rose-50 hover:border-rose-300",
   }[variant];
   return (
     <button
       {...props}
-      className={`border-2 px-4 py-2 text-sm font-bold transition-colors disabled:opacity-40 ${styles} ${className}`}
+      className={`border px-4 py-2 text-sm font-semibold tracking-tight transition-colors disabled:opacity-40 ${styles} ${className}`}
     />
   );
 }
 
 export function Card({ children }: { children: ReactNode }) {
-  return (
-    <div className="border-2 border-black bg-white p-5">{children}</div>
-  );
+  return <div className="border border-zinc-200 bg-white p-6">{children}</div>;
 }

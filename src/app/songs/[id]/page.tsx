@@ -493,7 +493,7 @@ export default function SongLinesPage() {
   return (
     <div>
       {loadError && (
-        <p className="mt-2 border-2 border-black bg-zinc-50 px-3 py-2 text-sm font-medium text-rose-600">
+        <p className="mt-2 border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-rose-600">
           読み込みエラー: {loadError}
         </p>
       )}
@@ -501,8 +501,8 @@ export default function SongLinesPage() {
       <div className="sticky top-0 z-20 mb-0 bg-zinc-50 pb-1 pt-1">
       <div className="mb-3 flex items-start justify-between gap-4">
         <div>
-          <h1 className="flex flex-wrap items-center gap-x-3 gap-y-2 text-2xl font-bold tracking-tight text-black">
-            <span className="inline-block border-2 border-black bg-accent px-2 py-0.5 text-xs font-bold text-black">
+          <h1 className="flex flex-wrap items-center gap-x-3 gap-y-2 text-2xl font-bold tracking-tight text-zinc-900">
+            <span className="inline-block border border-zinc-200 bg-accent px-2 py-0.5 text-xs font-bold text-zinc-900">
               Lv.{song.level}
             </span>
             <span>
@@ -544,9 +544,9 @@ export default function SongLinesPage() {
       </div>
 
       {/* 編集用 YouTube プレイヤー（再生しながら秒数・クイズを設定） */}
-      <div className="border-2 border-black bg-white p-3">
+      <div className="border border-zinc-200 bg-white p-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="w-full shrink-0 border-2 border-black bg-black sm:w-72">
+          <div className="w-full shrink-0 border border-zinc-200 bg-black sm:w-72">
             <div className="aspect-video">
               <YouTube
                 videoId={extractYoutubeId(song.youtube_id)}
@@ -582,13 +582,13 @@ export default function SongLinesPage() {
                     if (e.key === "Enter") commitField();
                     if (e.key === "Escape") setEditField(null);
                   }}
-                  className="w-14 border-2 border-black px-1 py-0.5 text-xs font-bold"
+                  className="w-14 border border-zinc-200 px-1 py-0.5 text-xs font-bold"
                 />
               ) : (
                 <button
                   type="button"
                   onClick={() => startFieldEdit("level", String(song.level))}
-                  className="inline-block shrink-0 border-2 border-black bg-accent px-2 py-0.5 text-xs font-bold text-black hover:opacity-80"
+                  className="inline-block shrink-0 border border-zinc-200 bg-accent px-2 py-0.5 text-xs font-bold text-zinc-900 hover:opacity-80"
                 >
                   Lv.{song.level}
                 </button>
@@ -604,13 +604,13 @@ export default function SongLinesPage() {
                     if (e.key === "Enter") commitField();
                     if (e.key === "Escape") setEditField(null);
                   }}
-                  className="border-2 border-black px-2 py-0.5 text-sm font-bold"
+                  className="border border-zinc-200 px-2 py-0.5 text-sm font-bold"
                 />
               ) : (
                 <button
                   type="button"
                   onClick={() => startFieldEdit("title", song.title)}
-                  className="font-bold tracking-tight text-black underline decoration-dotted underline-offset-2 hover:bg-accent"
+                  className="font-bold tracking-tight text-zinc-900 underline decoration-dotted underline-offset-2 hover:bg-accent"
                 >
                   {song.title}
                 </button>
@@ -626,7 +626,7 @@ export default function SongLinesPage() {
                     if (e.key === "Enter") commitField();
                     if (e.key === "Escape") setEditField(null);
                   }}
-                  className="border-2 border-black px-2 py-0.5 text-sm font-bold"
+                  className="border border-zinc-200 px-2 py-0.5 text-sm font-bold"
                   placeholder="日本語名"
                 />
               ) : (
@@ -649,7 +649,7 @@ export default function SongLinesPage() {
                     if (e.key === "Enter") commitField();
                     if (e.key === "Escape") setEditField(null);
                   }}
-                  className="border-2 border-black px-2 py-0.5 text-sm"
+                  className="border border-zinc-200 px-2 py-0.5 text-sm"
                   placeholder="アーティスト"
                 />
               ) : (
@@ -674,7 +674,7 @@ export default function SongLinesPage() {
                   onKeyDown={(e) => {
                     if (e.key === "Escape") setEditField(null);
                   }}
-                  className="w-full border-2 border-black px-2 py-1 text-sm"
+                  className="w-full border border-zinc-200 px-2 py-1 text-sm"
                   placeholder="曲の説明"
                 />
               ) : (
@@ -741,11 +741,11 @@ export default function SongLinesPage() {
           <div className="my-8 w-full max-w-4xl [&>div]:border [&_input]:border [&_select]:border [&_textarea]:border">
           <Card>
             <div className="mb-4 flex items-center justify-between">
-              <p className="text-lg font-bold text-black">歌詞行を編集</p>
+              <p className="text-lg font-bold text-zinc-900">歌詞行を編集</p>
               <button
                 onClick={() => setDraft(null)}
                 aria-label="閉じる"
-                className="text-xl font-bold text-zinc-400 hover:text-black"
+                className="text-xl font-bold text-zinc-400 hover:text-zinc-900"
               >
                 ✕
               </button>
@@ -763,10 +763,10 @@ export default function SongLinesPage() {
                   key={key}
                   type="button"
                   onClick={() => setModalTab(key)}
-                  className={`border-2 border-black px-4 py-1.5 text-sm font-bold transition-colors ${
+                  className={`border border-zinc-200 px-4 py-1.5 text-sm font-bold transition-colors ${
                     modalTab === key
                       ? "bg-black text-white"
-                      : "bg-white text-black hover:bg-accent"
+                      : "bg-white text-zinc-900 hover:bg-accent"
                   }`}
                 >
                   {label}
@@ -797,7 +797,7 @@ export default function SongLinesPage() {
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-4">
-              <span className="text-sm font-bold text-black">
+              <span className="text-sm font-bold text-zinc-900">
                 器楽パート（歌詞なし）
               </span>
               {INTERLUDE_KINDS.map((kind) => {
@@ -805,7 +805,7 @@ export default function SongLinesPage() {
                 return (
                   <label
                     key={kind}
-                    className="flex items-center gap-1.5 text-sm font-bold text-black"
+                    className="flex items-center gap-1.5 text-sm font-bold text-zinc-900"
                   >
                     <input
                       type="checkbox"
@@ -875,7 +875,7 @@ export default function SongLinesPage() {
             )}
             {!draft.isInterlude && (
               <div>
-                <label className="flex items-center gap-2 text-sm font-bold text-black">
+                <label className="flex items-center gap-2 text-sm font-bold text-zinc-900">
                   <input
                     type="checkbox"
                     checked={draft.quizEnabled}
@@ -898,10 +898,10 @@ export default function SongLinesPage() {
                   ]),
                 ).sort((a, b) => a - b);
                 return (
-                  <div className="mt-4 space-y-6 border-2 border-black p-4">
+                  <div className="mt-4 space-y-6 border border-zinc-200 p-4">
                     {/* ① 問題文 */}
                     <div>
-                      <p className="mb-2 text-sm font-bold text-black">
+                      <p className="mb-2 text-sm font-bold text-zinc-900">
                         ① 問題文
                       </p>
                       <div className="mb-2 flex gap-2">
@@ -915,10 +915,10 @@ export default function SongLinesPage() {
                             key={t}
                             type="button"
                             onClick={() => setQuizType(t)}
-                            className={`border-2 border-black px-3 py-1.5 text-sm font-bold ${
+                            className={`border border-zinc-200 px-3 py-1.5 text-sm font-bold ${
                               draft.authoring.type === t
                                 ? "bg-black text-white"
-                                : "bg-white text-black hover:bg-accent"
+                                : "bg-white text-zinc-900 hover:bg-accent"
                             }`}
                           >
                             {label}
@@ -955,7 +955,7 @@ export default function SongLinesPage() {
 
                     {/* ② 選択肢 */}
                     <div>
-                      <p className="mb-2 text-sm font-bold text-black">
+                      <p className="mb-2 text-sm font-bold text-zinc-900">
                         ② 選択肢
                       </p>
                       {draft.authoring.options.map((o, i) => (
@@ -966,7 +966,7 @@ export default function SongLinesPage() {
                               updatePoolOption(i, { text: e.target.value })
                             }
                             placeholder="語"
-                            className="flex-1 border-2 border-black px-2 py-1.5 text-sm"
+                            className="flex-1 border border-zinc-200 px-2 py-1.5 text-sm"
                           />
                           <select
                             value={o.blank ?? ""}
@@ -977,7 +977,7 @@ export default function SongLinesPage() {
                                   : null,
                               })
                             }
-                            className="border-2 border-black px-2 py-1.5 text-sm font-bold"
+                            className="border border-zinc-200 px-2 py-1.5 text-sm font-bold"
                           >
                             <option value="">未設定</option>
                             {nums.map((n) => (
@@ -989,7 +989,7 @@ export default function SongLinesPage() {
                           <button
                             type="button"
                             onClick={() => removePoolOption(i)}
-                            className="border-2 border-black px-2 py-1 text-sm font-bold text-rose-600 hover:bg-rose-50"
+                            className="border border-zinc-200 px-2 py-1 text-sm font-bold text-rose-600 hover:bg-rose-50"
                           >
                             削除
                           </button>
@@ -998,7 +998,7 @@ export default function SongLinesPage() {
                       <button
                         type="button"
                         onClick={addPoolOption}
-                        className="mt-1 border-2 border-black px-3 py-1.5 text-sm font-bold text-black hover:bg-accent"
+                        className="mt-1 border border-zinc-200 px-3 py-1.5 text-sm font-bold text-zinc-900 hover:bg-accent"
                       >
                         ＋ 語を追加
                       </button>
@@ -1031,10 +1031,10 @@ export default function SongLinesPage() {
         </div>
       )}
 
-      <div className="border-2 border-black bg-white p-3">
+      <div className="border border-zinc-200 bg-white p-3">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-slate-100 text-slate-400">
+            <tr className="border-b border-zinc-200 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
               <th className="py-1 text-left">時間</th>
               <th className="text-left">歌詞</th>
               <th className="text-left">意味</th>
@@ -1052,8 +1052,8 @@ export default function SongLinesPage() {
           </thead>
           <tbody>
             {lines.map((l) => (
-              <tr key={l.id} className="border-b border-slate-50">
-                <td className="py-2 text-slate-400">
+              <tr key={l.id} className="border-b border-zinc-100">
+                <td className="py-2 text-zinc-400">
                   {inlineId === l.id ? (
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-1">
@@ -1067,7 +1067,7 @@ export default function SongLinesPage() {
                           }}
                           placeholder="12.34"
                           aria-label="開始"
-                          className="w-16 rounded border-2 border-black px-1 py-0.5 text-sm text-zinc-900"
+                          className="w-16 rounded border border-zinc-200 px-1 py-0.5 text-sm text-zinc-900"
                         />
                         <span className="text-zinc-900">–</span>
                         <input
@@ -1080,14 +1080,14 @@ export default function SongLinesPage() {
                           }}
                           placeholder="18.50"
                           aria-label="終了"
-                          className="w-16 rounded border-2 border-black px-1 py-0.5 text-sm text-zinc-900"
+                          className="w-16 rounded border border-zinc-200 px-1 py-0.5 text-sm text-zinc-900"
                         />
                         <button
                           type="button"
                           onClick={() => saveInline(l.id)}
                           aria-label="保存"
                           title="保存"
-                          className="rounded border-2 border-black bg-accent px-2 py-0.5 text-sm font-bold text-black hover:opacity-80"
+                          className="rounded border border-zinc-200 bg-accent px-2 py-0.5 text-sm font-bold text-zinc-900 hover:opacity-80"
                         >
                           ✓
                         </button>
@@ -1096,7 +1096,7 @@ export default function SongLinesPage() {
                           onClick={cancelInline}
                           aria-label="キャンセル"
                           title="キャンセル"
-                          className="rounded border-2 border-black px-2 py-0.5 text-sm font-bold text-black hover:bg-zinc-100"
+                          className="rounded border border-zinc-200 px-2 py-0.5 text-sm font-bold text-zinc-900 hover:bg-zinc-100"
                         >
                           ✕
                         </button>
@@ -1150,7 +1150,7 @@ export default function SongLinesPage() {
                         クイズ{qs.length}
                       </span>
                     ) : (
-                      <span className="text-slate-300">—</span>
+                      <span className="text-zinc-300">—</span>
                     );
                   })()}
                 </td>
@@ -1182,7 +1182,7 @@ export default function SongLinesPage() {
             ))}
             {lines.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-6 text-center text-slate-400">
+                <td colSpan={6} className="py-6 text-center text-zinc-400">
                   歌詞行がありません。「歌詞行を追加」から作成してください。
                 </td>
               </tr>
@@ -1196,13 +1196,13 @@ export default function SongLinesPage() {
         <>
           <div className="fixed inset-0 z-[60]" onClick={() => setCtx(null)} />
           <div
-            className="fixed z-[61] border-2 border-black bg-white"
+            className="fixed z-[61] border border-zinc-200 bg-white"
             style={{ top: ctx.y, left: ctx.x }}
           >
             <button
               type="button"
               onClick={applyBlank}
-              className="block whitespace-nowrap px-3 py-2 text-sm font-bold text-black hover:bg-accent"
+              className="block whitespace-nowrap px-3 py-2 text-sm font-bold text-zinc-900 hover:bg-accent"
             >
               空欄にする（#
               {(() => {
