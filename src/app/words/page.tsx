@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useTable } from "@/lib/db";
-import type { Unit, Word } from "@/lib/types";
+import { getSupabase } from "@/lib/supabase";
+import type { Unit, Word, Difficulty } from "@/lib/types";
 import {
   PageHeader,
   Button,
@@ -16,17 +17,38 @@ type Draft = Partial<Word>;
 
 export default function WordsPage() {
   const { rows: units } = useTable<Unit>("units", { column: "order_index" });
-  const { rows, loading, error, save, remove } = useTable<Word>("words");
+  const { rows, loading, error, save, remove, refresh } =
+    useTable<Word>("words");
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const [filterUnit, setFilterUnit] = useState("all");
+  const [selected, setSelected] = useState<string[]>([]);
 
   const unitTitle = (id: string | null | undefined) =>
     units.find((u) => u.id === id)?.title ?? "—";
 
   const visible =
     filterUnit === "all" ? rows : rows.filter((w) => w.unit_id === filterUnit);
+
+  const toggleSelect = (id: string) =>
+    setSelected((s) =>
+      s.includes(id) ? s.filter((x) => x !== id) : [...s, id],
+    );
+  const allSelected =
+    visible.length > 0 && visible.every((w) => selected.includes(w.id));
+  const toggleSelectAll = () =>
+    setSelected(allSelected ? [] : visible.map((w) => w.id));
+
+  async function deleteSelected() {
+    if (selected.length === 0) return;
+    if (!confirm(`選択した ${selected.length} 件を削除しますか？`)) return;
+    const sb = getSupabase();
+    if (!sb) return;
+    await sb.from("words").delete().in("id", selected);
+    setSelected([]);
+    refresh();
+  }
 
   async function submit() {
     if (!draft?.korean || !draft?.meaning_ja) {
@@ -43,7 +65,10 @@ export default function WordsPage() {
       meaning_ja: draft.meaning_ja,
       example: draft.example ?? null,
       level: Number(draft.level ?? 1),
-      category: draft.category ?? null,
+      category_large: draft.category_large || null,
+      category_medium: draft.category_medium || null,
+      category_small: draft.category_small || null,
+      difficulty: draft.difficulty || null,
     });
     setSaving(false);
     if (error) setFormError(error);
@@ -56,14 +81,21 @@ export default function WordsPage() {
         title="単語"
         subtitle="単元に紐づけて単語を登録します"
         action={
-          <Button
-            onClick={() =>
-              setDraft({ level: 1, unit_id: units[0]?.id ?? null })
-            }
-            disabled={units.length === 0}
-          >
-            ＋ 新規追加
-          </Button>
+          <div className="flex flex-wrap justify-end gap-2">
+            {selected.length > 0 && (
+              <Button variant="danger" onClick={deleteSelected}>
+                選択削除（{selected.length}）
+              </Button>
+            )}
+            <Button
+              onClick={() =>
+                setDraft({ level: 1, unit_id: units[0]?.id ?? null })
+              }
+              disabled={units.length === 0}
+            >
+              ＋ 新規追加
+            </Button>
+          </div>
         }
       />
 
@@ -75,8 +107,18 @@ export default function WordsPage() {
       {error && <p className="mb-4 text-sm text-rose-500">{error}</p>}
 
       {draft && (
-        <div className="mb-6">
-          <Card>
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4"
+          onClick={() => setDraft(null)}
+        >
+          <div
+            className="my-8 w-full max-w-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Card>
+              <h2 className="mb-4 text-lg font-bold tracking-tight text-black">
+                {draft.id ? "単語を編集" : "単語を新規追加"}
+              </h2>
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="単元">
                 <Select
@@ -113,15 +155,6 @@ export default function WordsPage() {
                   placeholder="안녕하세요"
                 />
               </Field>
-              <Field label="発音（カナ/ローマ字）">
-                <TextInput
-                  value={draft.reading ?? ""}
-                  onChange={(e) =>
-                    setDraft({ ...draft, reading: e.target.value })
-                  }
-                  placeholder="アンニョンハセヨ"
-                />
-              </Field>
               <Field label="意味（日本語）">
                 <TextInput
                   value={draft.meaning_ja ?? ""}
@@ -131,15 +164,53 @@ export default function WordsPage() {
                   placeholder="こんにちは"
                 />
               </Field>
-              <Field label="カテゴリ（任意）">
-                <TextInput
-                  value={draft.category ?? ""}
+              <Field label="難易度（任意）">
+                <Select
+                  value={draft.difficulty ?? ""}
                   onChange={(e) =>
-                    setDraft({ ...draft, category: e.target.value })
+                    setDraft({
+                      ...draft,
+                      difficulty: (e.target.value || null) as
+                        | Difficulty
+                        | null,
+                    })
                   }
-                  placeholder="あいさつ"
-                />
+                >
+                  <option value="">（未設定）</option>
+                  <option value="初級">初級</option>
+                  <option value="中級">中級</option>
+                  <option value="上級">上級</option>
+                </Select>
               </Field>
+              <div className="grid gap-4 md:col-span-2 md:grid-cols-3">
+                <Field label="大カテゴリー（任意）">
+                  <TextInput
+                    value={draft.category_large ?? ""}
+                    onChange={(e) =>
+                      setDraft({ ...draft, category_large: e.target.value })
+                    }
+                    placeholder="名詞"
+                  />
+                </Field>
+                <Field label="中カテゴリー（任意）">
+                  <TextInput
+                    value={draft.category_medium ?? ""}
+                    onChange={(e) =>
+                      setDraft({ ...draft, category_medium: e.target.value })
+                    }
+                    placeholder="食べ物"
+                  />
+                </Field>
+                <Field label="小カテゴリー（任意）">
+                  <TextInput
+                    value={draft.category_small ?? ""}
+                    onChange={(e) =>
+                      setDraft({ ...draft, category_small: e.target.value })
+                    }
+                    placeholder="果物"
+                  />
+                </Field>
+              </div>
               <div className="md:col-span-2">
                 <Field label="例文（任意）">
                   <TextInput
@@ -163,7 +234,8 @@ export default function WordsPage() {
                 キャンセル
               </Button>
             </div>
-          </Card>
+            </Card>
+          </div>
         </div>
       )}
 
@@ -190,17 +262,23 @@ export default function WordsPage() {
             <thead>
               <tr className="border-b border-slate-100 text-slate-400">
                 <th className="py-2">韓国語</th>
-                <th>発音</th>
                 <th>意味</th>
                 <th>単元</th>
                 <th className="text-center">操作</th>
+                <th className="py-2 text-center">
+                  <input
+                    type="checkbox"
+                    aria-label="全選択"
+                    checked={allSelected}
+                    onChange={toggleSelectAll}
+                  />
+                </th>
               </tr>
             </thead>
             <tbody>
               {visible.map((w) => (
                 <tr key={w.id} className="border-b border-slate-50">
                   <td className="py-2 font-bold text-slate-700">{w.korean}</td>
-                  <td className="text-slate-500">{w.reading}</td>
                   <td className="text-slate-500">{w.meaning_ja}</td>
                   <td className="text-slate-400">{unitTitle(w.unit_id)}</td>
                   <td className="text-center">
@@ -218,6 +296,14 @@ export default function WordsPage() {
                         削除
                       </Button>
                     </div>
+                  </td>
+                  <td className="py-2 text-center align-middle">
+                    <input
+                      type="checkbox"
+                      aria-label="選択"
+                      checked={selected.includes(w.id)}
+                      onChange={() => toggleSelect(w.id)}
+                    />
                   </td>
                 </tr>
               ))}

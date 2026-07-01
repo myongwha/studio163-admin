@@ -8,6 +8,8 @@ export interface Unit {
   order_index: number;
 }
 
+export type Difficulty = "初級" | "中級" | "上級";
+
 export interface Word {
   id: string;
   unit_id: string | null;
@@ -16,7 +18,11 @@ export interface Word {
   meaning_ja: string;
   example?: string | null;
   level: number;
-  category?: string | null;
+  category?: string | null; // 旧: 単一カテゴリ（後方互換）
+  category_large?: string | null; // 大カテゴリー
+  category_medium?: string | null; // 中カテゴリー
+  category_small?: string | null; // 小カテゴリー
+  difficulty?: Difficulty | null; // 初級/中級/上級（任意）
 }
 
 export interface Sentence {
@@ -26,6 +32,25 @@ export interface Sentence {
   meaning_ja: string;
   tokens: string[];
   level: number;
+}
+
+// 文法学習コース（1ページ目＝構造化／2ページ目以降＝ブログ形式）
+export interface GrammarExample {
+  korean: string;
+  meaning_ja: string;
+}
+export interface GrammarPage {
+  title: string;
+  body: string;
+}
+export interface GrammarLesson {
+  id: string;
+  title: string; // 文法名
+  description: string; // 説明
+  image?: string | null; // 写真URL（1ページ目）
+  examples?: GrammarExample[]; // 例文（1ページ目）
+  level: number;
+  pages: GrammarPage[]; // 2ページ目以降
 }
 
 export type SongLineQuizType = "blank" | "meaning";

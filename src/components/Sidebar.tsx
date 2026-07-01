@@ -7,6 +7,7 @@ const NAV = [
   { href: "/", label: "ダッシュボード", icon: "📊" },
   { href: "/units", label: "単元", icon: "🗂" },
   { href: "/words", label: "単語", icon: "📒" },
+  { href: "/grammar", label: "文法", icon: "📝" },
   { href: "/sentences", label: "文章", icon: "💬" },
   { href: "/songs", label: "楽曲", icon: "🎵" },
 ];
