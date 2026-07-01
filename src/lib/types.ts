@@ -10,6 +10,24 @@ export interface Unit {
 
 export type Difficulty = "初級" | "中級" | "上級";
 
+// カテゴリーマスタ（大>中>小の階層）: level 1=大 / 2=中 / 3=小
+export interface Category {
+  id: string;
+  name: string;
+  level: number;
+  parent_id: string | null;
+}
+
+// 活用形の種別
+export type ConjugationType = "平叙文" | "疑問文" | "命令文" | "感嘆文";
+
+// 活用形バリエーション（韓国語：日本語）
+export interface ConjugationVariation {
+  type: ConjugationType;
+  korean: string;
+  meaning_ja: string;
+}
+
 export interface Word {
   id: string;
   unit_id: string | null;
@@ -23,6 +41,9 @@ export interface Word {
   category_medium?: string | null; // 中カテゴリー
   category_small?: string | null; // 小カテゴリー
   difficulty?: Difficulty | null; // 初級/中級/上級（任意）
+  antonym?: string | null; // 対義語
+  synonym?: string | null; // 類義語
+  conjugations?: ConjugationVariation[]; // 活用形（韓国語：日本語のバリエーション）
 }
 
 export interface Sentence {

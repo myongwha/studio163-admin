@@ -738,7 +738,7 @@ export default function SongLinesPage() {
 
       {draft && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4">
-          <div className="my-8 w-full max-w-4xl">
+          <div className="my-8 w-full max-w-4xl [&>div]:border [&_input]:border [&_select]:border [&_textarea]:border">
           <Card>
             <div className="mb-4 flex items-center justify-between">
               <p className="text-lg font-bold text-black">歌詞行を編集</p>

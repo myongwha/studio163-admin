@@ -102,7 +102,7 @@ export default function GrammarAdminPage() {
           onClick={() => setDraft(null)}
         >
           <div
-            className="my-8 w-full max-w-3xl"
+            className="my-8 w-full max-w-4xl [&>div]:border [&_input]:border [&_select]:border [&_textarea]:border"
             onClick={(e) => e.stopPropagation()}
           >
             <Card>

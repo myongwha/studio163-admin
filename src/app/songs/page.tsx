@@ -64,7 +64,7 @@ export default function SongsPage() {
           onClick={() => setDraft(null)}
         >
           <div
-            className="my-8 w-full max-w-2xl"
+            className="my-8 w-full max-w-4xl [&>div]:border [&_input]:border [&_select]:border [&_textarea]:border"
             onClick={(e) => e.stopPropagation()}
           >
             <Card>
