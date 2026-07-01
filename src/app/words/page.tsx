@@ -53,6 +53,24 @@ export default function WordsPage() {
     .filter((w) => w.id !== draft?.id)
     .map((w) => ({ korean: w.korean, meaning_ja: w.meaning_ja }));
 
+  // 対義語・類義語（複数）。既存データは単数フィールドを先頭として表示
+  const antonyms =
+    draft?.antonyms && draft.antonyms.length
+      ? draft.antonyms
+      : draft?.antonym
+        ? [draft.antonym]
+        : [""];
+  const synonyms =
+    draft?.synonyms && draft.synonyms.length
+      ? draft.synonyms
+      : draft?.synonym
+        ? [draft.synonym]
+        : [""];
+  const setAntonyms = (n: string[]) =>
+    setDraft((d) => (d ? { ...d, antonyms: n } : d));
+  const setSynonyms = (n: string[]) =>
+    setDraft((d) => (d ? { ...d, synonyms: n } : d));
+
   const toggleSelect = (id: string) =>
     setSelected((s) =>
       s.includes(id) ? s.filter((x) => x !== id) : [...s, id],
@@ -112,31 +130,49 @@ export default function WordsPage() {
         : d,
     );
 
-  // 対義語を双方向に紐づける（相手側にも自分を登録／付け替え時は旧リンク解除）
-  async function syncAntonym() {
+  // 単語の対義語リストを取得（配列 or 旧単数フィールド）
+  const antList = (w: {
+    antonyms?: string[] | null;
+    antonym?: string | null;
+  }) =>
+    (w.antonyms && w.antonyms.length ? w.antonyms : w.antonym ? [w.antonym] : [])
+      .map((x) => x.trim())
+      .filter(Boolean);
+
+  // 対義語を双方向に紐づける（相手側の対義語リストにも自分を追加／解除）
+  async function syncAntonym(newList: string[]) {
     const sb = getSupabase();
     if (!sb || !draft) return;
     const myKorean = (draft.korean ?? "").trim();
-    const newAnt = (draft.antonym ?? "").trim();
+    if (!myKorean) return;
     const original = draft.id ? rows.find((w) => w.id === draft.id) : null;
-    const oldAnt = (original?.antonym ?? "").trim();
+    const oldList = original ? antList(original) : [];
+    const added = newList.filter((a) => !oldList.includes(a));
+    const removed = oldList.filter((a) => !newList.includes(a));
 
-    // 付け替え・解除時、旧相手が自分を指していたら解除
-    if (oldAnt && oldAnt !== newAnt) {
-      const prev = rows.find(
-        (w) => w.korean === oldAnt && (w.antonym ?? "").trim() === myKorean,
-      );
-      if (prev)
-        await sb.from("words").update({ antonym: null }).eq("id", prev.id);
-    }
-    // 新相手に自分を対義語として登録
-    if (newAnt) {
-      const mate = rows.find((w) => w.korean === newAnt && w.id !== draft.id);
-      if (mate)
+    for (const a of added) {
+      const mate = rows.find((w) => w.korean === a && w.id !== draft.id);
+      if (!mate) continue;
+      const list = antList(mate);
+      if (!list.includes(myKorean)) {
+        const up = [...list, myKorean];
         await sb
           .from("words")
-          .update({ antonym: myKorean })
+          .update({ antonyms: up, antonym: up[0] })
           .eq("id", mate.id);
+      }
+    }
+    for (const a of removed) {
+      const mate = rows.find((w) => w.korean === a);
+      if (!mate) continue;
+      const list = antList(mate);
+      if (list.includes(myKorean)) {
+        const up = list.filter((x) => x !== myKorean);
+        await sb
+          .from("words")
+          .update({ antonyms: up, antonym: up[0] ?? null })
+          .eq("id", mate.id);
+      }
     }
   }
 
@@ -161,6 +197,8 @@ export default function WordsPage() {
       setFormError("韓国語と意味は必須です");
       return;
     }
+    const cleanAntonyms = antonyms.map((a) => a.trim()).filter(Boolean);
+    const cleanSynonyms = synonyms.map((s) => s.trim()).filter(Boolean);
     setSaving(true);
     setFormError("");
     const { error } = await save({
@@ -170,13 +208,16 @@ export default function WordsPage() {
       meaning_ja: cleanMeanings[0],
       meanings: cleanMeanings,
       example: draft.example ?? null,
+      example_ja: draft.example_ja || null,
       level: Number(draft.level ?? 1),
       category_large: draft.category_large || null,
       category_medium: draft.category_medium || null,
       category_small: draft.category_small || null,
       difficulty: draft.difficulty || null,
-      antonym: draft.antonym || null,
-      synonym: draft.synonym || null,
+      antonym: cleanAntonyms[0] ?? null,
+      antonyms: cleanAntonyms,
+      synonym: cleanSynonyms[0] ?? null,
+      synonyms: cleanSynonyms,
       is_noun: !!draft.is_noun,
       is_adjective: !!draft.is_adjective,
       is_verb: !!draft.is_verb,
@@ -193,7 +234,7 @@ export default function WordsPage() {
       setFormError(error);
       return;
     }
-    await syncAntonym();
+    await syncAntonym(cleanAntonyms);
     await refresh();
     setSaving(false);
     setDraft(null);
@@ -348,27 +389,27 @@ export default function WordsPage() {
                     }
                   />
                 </Field>
+                <Field label="難易度（任意）">
+                  <Select
+                    value={draft.difficulty ?? ""}
+                    onChange={(e) =>
+                      setDraft({
+                        ...draft,
+                        difficulty: (e.target.value || null) as
+                          | Difficulty
+                          | null,
+                      })
+                    }
+                  >
+                    <option value="">（未設定）</option>
+                    <option value="初級">初級</option>
+                    <option value="中級">中級</option>
+                    <option value="上級">上級</option>
+                  </Select>
+                </Field>
               </div>
             </div>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <Field label="難易度（任意）">
-                <Select
-                  value={draft.difficulty ?? ""}
-                  onChange={(e) =>
-                    setDraft({
-                      ...draft,
-                      difficulty: (e.target.value || null) as
-                        | Difficulty
-                        | null,
-                    })
-                  }
-                >
-                  <option value="">（未設定）</option>
-                  <option value="初級">初級</option>
-                  <option value="中級">中級</option>
-                  <option value="上級">上級</option>
-                </Select>
-              </Field>
               {largeCats.length === 0 && (
                 <p className="md:col-span-2 text-xs text-zinc-400">
                   カテゴリーが未登録です。
@@ -447,22 +488,88 @@ export default function WordsPage() {
                 </Field>
               </div>
               <div className="grid gap-4 md:col-span-2 md:grid-cols-2">
-                <Field label="対義語（任意・入力すると相手側にも自動登録）">
-                  <WordSuggest
-                    value={draft.antonym ?? ""}
-                    onChange={(v) => setDraft({ ...draft, antonym: v })}
-                    options={suggestWords}
-                    placeholder="작다"
-                  />
-                </Field>
-                <Field label="類義語（任意）">
-                  <WordSuggest
-                    value={draft.synonym ?? ""}
-                    onChange={(v) => setDraft({ ...draft, synonym: v })}
-                    options={suggestWords}
-                    placeholder="거대하다"
-                  />
-                </Field>
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                      対義語（任意・相手側にも自動登録）
+                    </span>
+                    <Button
+                      variant="ghost"
+                      onClick={() => setAntonyms([...antonyms, ""])}
+                    >
+                      ＋ 追加
+                    </Button>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {antonyms.map((a, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                          <WordSuggest
+                            value={a}
+                            onChange={(v) =>
+                              setAntonyms(
+                                antonyms.map((x, k) => (k === i ? v : x)),
+                              )
+                            }
+                            options={suggestWords}
+                            placeholder="작다"
+                          />
+                        </div>
+                        {antonyms.length > 1 && (
+                          <Button
+                            variant="danger"
+                            onClick={() =>
+                              setAntonyms(antonyms.filter((_, k) => k !== i))
+                            }
+                          >
+                            削除
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                      類義語（任意）
+                    </span>
+                    <Button
+                      variant="ghost"
+                      onClick={() => setSynonyms([...synonyms, ""])}
+                    >
+                      ＋ 追加
+                    </Button>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {synonyms.map((s, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                          <WordSuggest
+                            value={s}
+                            onChange={(v) =>
+                              setSynonyms(
+                                synonyms.map((x, k) => (k === i ? v : x)),
+                              )
+                            }
+                            options={suggestWords}
+                            placeholder="거대하다"
+                          />
+                        </div>
+                        {synonyms.length > 1 && (
+                          <Button
+                            variant="danger"
+                            onClick={() =>
+                              setSynonyms(synonyms.filter((_, k) => k !== i))
+                            }
+                          >
+                            削除
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
               <div className="md:col-span-2">
                 <div className="mb-2 flex items-center justify-between">
@@ -531,14 +638,23 @@ export default function WordsPage() {
                   ))}
                 </div>
               </div>
-              <div className="md:col-span-2">
-                <Field label="例文（任意）">
+              <div className="md:col-span-2 grid gap-4 md:grid-cols-2">
+                <Field label="例文（韓国語・任意）">
                   <TextInput
                     value={draft.example ?? ""}
                     onChange={(e) =>
                       setDraft({ ...draft, example: e.target.value })
                     }
                     placeholder="안녕하세요, 만나서 반갑습니다."
+                  />
+                </Field>
+                <Field label="例文（日本語・任意）">
+                  <TextInput
+                    value={draft.example_ja ?? ""}
+                    onChange={(e) =>
+                      setDraft({ ...draft, example_ja: e.target.value })
+                    }
+                    placeholder="こんにちは、お会いできて嬉しいです。"
                   />
                 </Field>
               </div>

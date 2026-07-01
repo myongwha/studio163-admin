@@ -35,14 +35,17 @@ export interface Word {
   reading: string;
   meaning_ja: string;
   example?: string | null;
+  example_ja?: string | null; // 例文の日本語訳
   level: number;
   category?: string | null; // 旧: 単一カテゴリ（後方互換）
   category_large?: string | null; // 大カテゴリー
   category_medium?: string | null; // 中カテゴリー
   category_small?: string | null; // 小カテゴリー
   difficulty?: Difficulty | null; // 初級/中級/上級（任意）
-  antonym?: string | null; // 対義語
-  synonym?: string | null; // 類義語
+  antonym?: string | null; // 対義語（先頭。後方互換）
+  synonym?: string | null; // 類義語（先頭。後方互換）
+  antonyms?: string[]; // 複数の対義語
+  synonyms?: string[]; // 複数の類義語
   conjugations?: ConjugationVariation[]; // 活用形（韓国語：日本語のバリエーション）
   image?: string | null; // 挿絵（画像URL・任意）
   image_source?: string | null; // 画像の引用元（出典・任意）
